@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Account &amp; Rental Login | RentHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/store.css">
+  <link rel="icon" href="assets/logo.png">
+  <style>
+    :root {
+      --primary: #0265fe;
+      --primary-hover: #0052d4;
+      --primary-subtle: #eff6ff;
+      --emerald: #10b981;
+      --dark: #0f172a;
+      --slate-600: #475569;
+      --slate-400: #94a3b8;
+      --border-subtle: #e2e8f0;
+      --surface-card: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(2, 101, 254, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 40%);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Clean Navbar */
+    .portal-nav-header {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .portal-nav-container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .portal-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .portal-brand-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .portal-brand-pill {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .portal-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-nav-store {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      color: #334155;
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav-store:hover {
+      background: #f1f5f9;
+      color: var(--dark);
+      border-color: #cbd5e1;
+    }
+
+    .btn-nav-cart {
+      background: var(--primary-subtle);
+      border: 1px solid #bfdbfe;
+      color: var(--primary);
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav-cart:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .cart-badge-dot {
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    /* Main Centered Wrapper */
+    .portal-main-wrapper {
+      flex: 1;
+      max-width: 540px;
+      margin: 40px auto;
+      padding: 0 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Centered Premium Auth Card */
+    .portal-auth-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+      padding: 36px 32px;
+      width: 100%;
+    }
+
+    /* Header in Card */
+    .card-brand-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .card-icon-badge {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(2, 101, 254, 0.12);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .card-subtitle {
+      font-size: 13.5px;
+      color: var(--slate-600);
+      line-height: 1.5;
+    }
+
+    /* Tab Switcher */
+    .clean-tabs-bar {
+      display: flex;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 12px;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+
+    .clean-tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-600);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .clean-tab-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Form Inputs */
+    .form-group-clean {
+      margin-bottom: 14px;
+    }
+
+    .form-label-clean {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 5px;
+    }
+
+    .input-clean-wrapper {
+      position: relative;
+    }
+
+    .input-clean-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px;
+      color: var(--slate-400);
+      pointer-events: none;
+    }
+
+    .input-clean-control {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px 0 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: #f8fafc;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--dark);
+      transition: all 0.2s ease;
+    }
+
+    .input-clean-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(2, 101, 254, 0.12);
+    }
+
+    .btn-eye-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--slate-400);
+      font-size: 15px;
+      padding: 4px;
+    }
+
+    /* 1-Click Demo Fill Chip */
+    .demo-chip-box {
+      margin: 4px 0 18px 0;
+    }
+
+    .btn-demo-chip {
+      width: 100%;
+      background: #eff6ff;
+      border: 1px dashed #93c5fd;
+      color: var(--primary);
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-demo-chip:hover {
+      background: #dbeafe;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    /* Primary CTA Button */
+    .btn-primary-clean {
+      width: 100%;
+      height: 46px;
+      background: linear-gradient(135deg, #0265fe 0%, #0052d4 100%);
+      border: none;
+      border-radius: 11px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(2, 101, 254, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary-clean:hover {
+      background: linear-gradient(135deg, #1d74fe 0%, #0045b5 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(2, 101, 254, 0.35);
+    }
+
+    .btn-primary-clean:active {
+      transform: translateY(0);
+    }
+
+    /* Bottom Trust Badges */
+    .portal-trust-pills {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    /* Logged In Customer Profile Hub View */
+    .profile-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 16px;
+    }
+
+    .profile-avatar-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #0265fe 0%, #0052d4 100%);
+      color: #ffffff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(2, 101, 254, 0.25);
+    }
+
+    .profile-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 2px;
+    }
+
+    .profile-contact {
+      font-size: 12.5px;
+      color: var(--slate-600);
+    }
+
+    .profile-badge-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #ecfdf5;
+      color: #059669;
+      padding: 2px 8px;
+      border-radius: 5px;
+      margin-top: 3px;
+    }
+
+    /* Metrics Strip */
+    .metrics-row-clean {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric-box-clean {
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .metric-val-clean {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .metric-val-clean.green {
+      color: var(--emerald);
+    }
+
+    .metric-lbl-clean {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--slate-600);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .orders-scroll-clean {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-right: 2px;
+    }
+
+    .btn-action-browse {
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 13.5px;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(2, 101, 254, 0.2);
+    }
+
+    .btn-action-logout {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action-logout:hover {
+      background: #e2e8f0;
+      color: var(--dark);
+    }
+
+    /* Minimalist Footer */
+    .portal-footer-simple {
+      text-align: center;
+      padding: 16px 20px 24px 20px;
+      font-size: 12px;
+      color: var(--slate-600);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Clean Navbar -->
+  <header class="portal-nav-header">
+    <div class="portal-nav-container">
+      <a href="store.html?shop=1" class="portal-brand">
+        <img src="assets/logo.png" alt="RentHub Logo" class="portal-brand-logo">
+        <span class="portal-brand-pill">Customer Portal</span>
+      </a>
+
+      <div class="portal-nav-actions">
+        <a href="store.html?shop=1" class="btn-nav-store">
+          <span>&larr; Back to Store</span>
+        </a>
+        <a href="store.html?shop=1&openCart=1" class="btn-nav-cart">
+          <span>🛒 Rental Cart</span>
+          <span class="cart-badge-dot" id="userPageCartCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Centered Layout -->
+  <main class="portal-main-wrapper">
+    
+    <div class="portal-auth-card">
+      
+      <!-- 1. LOGGED-IN CUSTOMER PROFILE HUB -->
+      <div id="userLoggedInSection" style="display: none;">
+        <div class="profile-card-header">
+          <div class="profile-avatar-box">👤</div>
+          <div>
+            <h3 id="loggedInUserName" class="profile-name">Rahul Sharma</h3>
+            <div id="loggedInUserContact" class="profile-contact">rahul.sharma@example.com • 9876543210</div>
+            <span class="profile-badge-ok">✓ Verified Customer Account</span>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 14px;">
+          <div style="color: var(--slate-600); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Saved Delivery Address:</div>
+          <div id="loggedInUserAddress" style="color: var(--dark); font-weight: 600;">Flat 402, Green Valley Heights, MG Road, Pune 411001</div>
+        </div>
+
+        <!-- Customer Stats -->
+        <div class="metrics-row-clean">
+          <div class="metric-box-clean">
+            <div class="metric-val-clean" id="userStatActive">1</div>
+            <div class="metric-lbl-clean">Active Rentals</div>
+          </div>
+          <div class="metric-box-clean">
+            <div class="metric-val-clean" id="userStatTotal">1</div>
+            <div class="metric-lbl-clean">Total Orders</div>
+          </div>
+          <div class="metric-box-clean">
+            <div class="metric-val-clean green" id="userStatDeposit">₹8,000</div>
+            <div class="metric-lbl-clean">Safe Deposit</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-size: 13.5px; font-weight: 800; color: var(--dark);">📦 My Rental Bookings</h4>
+          <span style="font-size: 11px; color: var(--primary); font-weight: 700;">Click item for live tracking</span>
+        </div>
+
+        <div id="userOrdersList" class="orders-scroll-clean">
+          <!-- Dynamically rendered -->
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+          <a href="store.html?shop=1" class="btn-action-browse">
+            <span>🛍️ Browse Store</span>
+          </a>
+          <button type="button" class="btn-action-logout" onclick="logoutUserAccount()">
+            <span>🚪 Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. LOGGED-OUT AUTH FORMS -->
+      <div id="userLoggedOutSection">
+        
+        <!-- Header with Brand Icon -->
+        <div class="card-brand-header">
+          <div class="card-icon-badge">⚡</div>
+          <h2 class="card-title">Customer Account</h2>
+          <p class="card-subtitle">Sign in to manage rentals, track live delivery orders &amp; refundable deposits.</p>
+        </div>
+
+        <!-- Clean Tabs -->
+        <div class="clean-tabs-bar">
+          <button type="button" class="clean-tab-btn active" id="tabLoginBtn" onclick="switchUserTab('login')">
+            <span>👤 Customer Sign In</span>
+          </button>
+          <button type="button" class="clean-tab-btn" id="tabRegisterBtn" onclick="switchUserTab('register')">
+            <span>✨ Create Account</span>
+          </button>
+        </div>
+
+        <!-- 2A. Sign In Pane -->
+        <div id="userLoginPane" class="user-tab-pane active">
+          <form id="userLoginForm" onsubmit="submitUserLogin(event)">
+            <div class="form-group-clean">
+              <label class="form-label-clean">Email or Phone Number *</label>
+              <div class="input-clean-wrapper">
+                <span class="input-clean-icon">✉️</span>
+                <input type="text" id="userLoginId" class="input-clean-control" placeholder="e.g. rahul.sharma@example.com or 9876543210" required>
+              </div>
+            </div>
+
+            <div class="form-group-clean">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <label class="form-label-clean" style="margin-bottom: 0;">Password *</label>
+                <span style="font-size: 11.5px; color: var(--primary); font-weight: 700; cursor: pointer;" onclick="alert('Demo customer password is: user123')">Demo Hint?</span>
+              </div>
+              <div class="input-clean-wrapper">
+                <span class="input-clean-icon">🔒</span>
+                <input type="password" id="userLoginPassword" class="input-clean-control" placeholder="Enter your password" required style="padding-right: 36px;">
+                <button type="button" class="btn-eye-toggle" onclick="togglePassVisibility('userLoginPassword')">👁️</button>
+              </div>
+            </div>
+
+            <!-- 1-Click Demo Fill Chip -->
+            <div class="demo-chip-box">
+              <button type="button" class="btn-demo-chip" onclick="fillDemoUser()">
+                <span>⚡ 1-Click Demo Customer Login (Rahul Sharma)</span>
+              </button>
+            </div>
+
+            <button type="submit" class="btn-primary-clean" id="userLoginBtn">
+              <span>🔐 Sign In to Customer Account &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 2B. Register Pane -->
+        <div id="userRegisterPane" class="user-tab-pane" style="display: none;">
+          <form id="userRegisterForm" onsubmit="submitUserRegister(event)">
+            <div class="form-group-clean" style="margin-bottom: 10px;">
+              <label class="form-label-clean">Full Name *</label>
+              <div class="input-clean-wrapper">
+                <span class="input-clean-icon">👤</span>
+                <input type="text" id="regUserName" class="input-clean-control" placeholder="e.g. Rahul Sharma" required style="height: 40px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div class="form-group-clean" style="margin-bottom: 0;">
+                <label class="form-label-clean">Email *</label>
+                <div class="input-clean-wrapper">
+                  <span class="input-clean-icon">✉️</span>
+                  <input type="email" id="regUserEmail" class="input-clean-control" placeholder="rahul.sharma@example.com" required style="height: 40px;">
+                </div>
+              </div>
+              <div class="form-group-clean" style="margin-bottom: 0;">
+                <label class="form-label-clean">Phone Number *</label>
+                <div class="input-clean-wrapper">
+                  <span class="input-clean-icon">📞</span>
+                  <input type="tel" id="regUserPhone" class="input-clean-control" placeholder="9876543210" required style="height: 40px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group-clean" style="margin-bottom: 10px;">
+              <label class="form-label-clean">Delivery Address *</label>
+              <div class="input-clean-wrapper">
+                <span class="input-clean-icon">📍</span>
+                <input type="text" id="regUserAddress" class="input-clean-control" placeholder="House/Flat No, Street, Landmark" required style="height: 40px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div class="form-group-clean" style="margin-bottom: 0;">
+                <label class="form-label-clean">City *</label>
+                <input type="text" id="regUserCity" class="input-clean-control" placeholder="Pune" required style="height: 40px; padding-left: 12px;">
+              </div>
+              <div class="form-group-clean" style="margin-bottom: 0;">
+                <label class="form-label-clean">Pincode *</label>
+                <input type="text" id="regUserPincode" class="input-clean-control" placeholder="411001" required style="height: 40px; padding-left: 12px;">
+              </div>
+            </div>
+
+            <div class="form-group-clean" style="margin-bottom: 14px;">
+              <label class="form-label-clean">Password *</label>
+              <div class="input-clean-wrapper">
+                <span class="input-clean-icon">🔒</span>
+                <input type="password" id="regUserPassword" class="input-clean-control" placeholder="Minimum 6 characters" minlength="6" required style="height: 40px;">
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary-clean" id="userRegBtn">
+              <span>✨ Create Customer Account &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Trust Badges Row -->
+    <div class="portal-trust-pills">
+      <div class="trust-pill">
+        <span>🛡️ 100% Refundable Deposits</span>
+      </div>
+      <div class="trust-pill">
+        <span>⚡ Instant Booking</span>
+      </div>
+      <div class="trust-pill">
+        <span>📦 Live Order Tracking</span>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="portal-footer-simple">
+    <span>🔒 256-Bit SSL Encrypted &bull; 100% Refundable Security Deposit Escrow &bull; RentHub Verified Platform</span>
+  </footer>
+
+  <!-- Customer Orders Detail Modal in User Portal -->
+  <div class="store-modal-backdrop" id="userOrderModal" style="z-index: 1050;">
+    <div class="store-modal-box orders-modal-box" style="max-width: 680px;">
+      <div class="store-modal-header" style="margin-bottom: 12px;">
+        <div class="orders-header-title-box">
+          <div class="orders-header-icon-badge">📦</div>
+          <div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #0a192f; margin: 0;">Order &amp; Product Details</h3>
+            <span style="font-size: 12px; color: #64748b; font-weight: 500;">Live Status &amp; Tracking Timeline</span>
+          </div>
+        </div>
+        <button class="store-modal-close" onclick="closeUserOrderModal()">&times;</button>
+      </div>
+      <div id="userOrderModalBody" style="display: flex; flex-direction: column; gap: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Floating Toast -->
+  <div class="store-toast-msg" id="storeToast"></div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    const API_USER_BASE = 'http://localhost:5000/api/user';
+    const storeToast = document.getElementById('storeToast');
+    let cachedUserOrders = [];
+
+    function showToast(msg, type = 'info') {
+      if (!storeToast) return;
+      storeToast.textContent = msg;
+      storeToast.className = `store-toast-msg show ${type}`;
+      setTimeout(() => { storeToast.className = 'store-toast-msg'; }, 3200);
+    }
+
+    function switchUserTab(tab) {
+      document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login');
+      document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register');
+
+      document.getElementById('userLoginPane').style.display = (tab === 'login') ? 'block' : 'none';
+      document.getElementById('userRegisterPane').style.display = (tab === 'register') ? 'block' : 'none';
+    }
+
+    function togglePassVisibility(id) {
+      const inp = document.getElementById(id);
+      if (inp) inp.type = (inp.type === 'password') ? 'text' : 'password';
+    }
+
+    function fillDemoUser() {
+      document.getElementById('userLoginId').value = 'rahul.sharma@example.com';
+      document.getElementById('userLoginPassword').value = 'user123';
+      showToast('Demo customer credentials filled! ⚡', 'info');
+    }
+
+    function checkUserSession() {
+      const token = localStorage.getItem('renthub_customer_token');
+      const userStr = localStorage.getItem('renthub_customer_data');
+
+      // Cart badge
+      try {
+        const cart = JSON.parse(localStorage.getItem('renthub_cart_items') || '[]');
+        const badge = document.getElementById('userPageCartCount');
+        if (badge) badge.textContent = cart.length;
+      } catch (e) {}
+
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          document.getElementById('userLoggedInSection').style.display = 'block';
+          document.getElementById('userLoggedOutSection').style.display = 'none';
+
+          document.getElementById('loggedInUserName').textContent = user.name || 'Customer';
+          document.getElementById('loggedInUserContact').textContent = `${user.email || ''} • ${user.phone || ''}`;
+          document.getElementById('loggedInUserAddress').textContent = `${user.address || 'Address not set'}, ${user.city || ''} ${user.pincode || ''}`;
+
+          loadCustomerOrders(user.phone || '');
+          return;
+        } catch (err) {
+          console.warn('Session parse error:', err);
+        }
+      }
+
+      document.getElementById('userLoggedInSection').style.display = 'none';
+      document.getElementById('userLoggedOutSection').style.display = 'block';
+    }
+
+    function redirectToBuyingPage() {
+      const params = new URLSearchParams(window.location.search);
+      const shopId = params.get('shop') || '1';
+      const returnUrl = params.get('returnUrl');
+      if (returnUrl) {
+        window.location.href = returnUrl;
+      } else {
+        window.location.href = `store.html?shop=${shopId}`;
+      }
+    }
+
+    async function submitUserLogin(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('userLoginId').value.trim();
+      const password = document.getElementById('userLoginPassword').value.trim();
+      const btn = document.getElementById('userLoginBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Signing In...</span>';
+
+      try {
+        const res = await fetch(`${API_USER_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, password })
+        });
+        const data = await res.json();
+
+        if (data.success && data.user) {
+          localStorage.setItem('renthub_customer_token', data.token);
+          localStorage.setItem('renthub_customer_data', JSON.stringify(data.user));
+          showToast(`Welcome back, ${data.user.name}! 🎉 Going to store...`, 'success');
+          setTimeout(redirectToBuyingPage, 500);
+        } else {
+          showToast(data.message || 'Login failed. Please check credentials.', 'error');
+        }
+      } catch (err) {
+        // Fallback demo login
+        if ((identifier === 'rahul.sharma@example.com' || identifier === '9876543210') && (password === 'user123' || password === 'password')) {
+          const fallbackUser = {
+            id: 1,
+            name: 'Rahul Sharma',
+            email: 'rahul.sharma@example.com',
+            phone: '9876543210',
+            address: 'Flat 402, Green Valley Heights, MG Road, Pune',
+            city: 'Pune',
+            pincode: '411001'
+          };
+          localStorage.setItem('renthub_customer_token', 'demo_customer_token');
+          localStorage.setItem('renthub_customer_data', JSON.stringify(fallbackUser));
+          showToast(`Welcome back, ${fallbackUser.name}! 🎉 Going to store...`, 'success');
+          setTimeout(redirectToBuyingPage, 500);
+        } else {
+          showToast('Login error. Please try again.', 'error');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔐 Sign In to Customer Account &rarr;</span>';
+      }
+    }
+
+    async function submitUserRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('regUserName').value.trim();
+      const email = document.getElementById('regUserEmail').value.trim();
+      const phone = document.getElementById('regUserPhone').value.trim();
+      const address = document.getElementById('regUserAddress').value.trim();
+      const city = document.getElementById('regUserCity').value.trim();
+      const pincode = document.getElementById('regUserPincode').value.trim();
+      const password = document.getElementById('regUserPassword').value.trim();
+      const btn = document.getElementById('userRegBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Creating Account...</span>';
+
+      try {
+        const res = await fetch(`${API_USER_BASE}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, address, city, pincode, password })
+        });
+        const data = await res.json();
+
+        if (data.success && data.user) {
+          localStorage.setItem('renthub_customer_token', data.token);
+          localStorage.setItem('renthub_customer_data', JSON.stringify(data.user));
+          showToast(`Account created! Welcome, ${data.user.name}! 🎉 Going to store...`, 'success');
+          setTimeout(redirectToBuyingPage, 500);
+        } else {
+          showToast(data.message || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Server error during registration.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ Create Customer Account &rarr;</span>';
+      }
+    }
+
+    async function loadCustomerOrders(phone) {
+      const container = document.getElementById('userOrdersList');
+      if (!container) return;
+
+      try {
+        const res = await fetch(`${API_USER_BASE}/orders?phone=${phone}`);
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+          cachedUserOrders = data.orders;
+          document.getElementById('userStatTotal').textContent = data.orders.length;
+          const activeCount = data.orders.filter(o => o.status === 'Active' || o.status === 'Pending').length;
+          document.getElementById('userStatActive').textContent = activeCount;
+          const totalDeposit = data.orders.reduce((sum, o) => sum + (o.deposit_amount || 0), 0);
+          document.getElementById('userStatDeposit').textContent = `₹${totalDeposit.toLocaleString('en-IN')}`;
+
+          container.innerHTML = data.orders.map(o => `
+            <div class="orders-item-card clickable" onclick="openUserOrderDetail('${o.id}')" style="margin-bottom: 6px;">
+              <div class="orders-item-header">
+                <div>
+                  <strong style="color: #0265fe; font-size: 13.5px;">Booking #${o.id}</strong>
+                  <span style="color: #64748b; font-size: 11.5px; margin-left: 6px;">📅 ${o.start_date} &rarr; ${o.end_date}</span>
+                </div>
+                <span class="orders-status-pill ${(o.status || 'pending').toLowerCase()}">
+                  ${o.status || 'Active'}
+                </span>
+              </div>
+              <div class="orders-item-body">
+                <img src="${o.product_image || 'assets/inventory_products.png'}" alt="Product" class="orders-item-img">
+                <div class="orders-item-details">
+                  <div class="orders-item-title">${o.product_name || 'Rental Item'}</div>
+                  <div class="orders-item-meta">
+                    <span>⏱️ ${o.total_days || 1} Days</span>
+                    <span>🚚 ${o.delivery_type || 'Store Pickup'}</span>
+                  </div>
+                </div>
+                <div class="orders-item-pricing">
+                  <div class="orders-total-amt">₹${(o.total_amount || 0).toLocaleString('en-IN')}</div>
+                  <div class="orders-deposit-amt">Deposit: ₹${(o.deposit_amount || 0).toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p style="font-size: 13px; color: #64748b; text-align: center; padding: 16px;">No active orders yet. Browse the catalog to start renting!</p>';
+        }
+      } catch (err) {
+        container.innerHTML = '<p style="font-size: 13px; color: #64748b; text-align: center;">Unable to load orders.</p>';
+      }
+    }
+
+    function openUserOrderDetail(orderId) {
+      const ord = cachedUserOrders.find(o => String(o.id) === String(orderId));
+      if (!ord) return;
+
+      const modal = document.getElementById('userOrderModal');
+      const modalBody = document.getElementById('userOrderModalBody');
+      if (!modal || !modalBody) return;
+
+      const status = ord.status || 'Active';
+      const isDoneOrReturned = status === 'Returned' || status === 'Completed';
+      const isOutForDelivery = status === 'Out for Delivery' || status === 'Ready';
+      const isActiveRental = status === 'Active' || status === 'Approved';
+
+      const step1Class = 'done';
+      const step1Icon = '✓';
+
+      let step2Class = 'done';
+      let step2Icon = '✓';
+      let step2Time = '✓ Inspection Passed';
+      if (status === 'Pending') {
+        step2Class = 'active-step';
+        step2Icon = '🔍';
+        step2Time = '⏳ In Progress';
+      }
+
+      let step3Class = isDoneOrReturned || isActiveRental ? 'done' : (isOutForDelivery ? 'active-step' : '');
+      let step3Icon = isDoneOrReturned || isActiveRental ? '✓' : '🚚';
+      let step3Time = isDoneOrReturned || isActiveRental ? '✓ Handed Over' : (isOutForDelivery ? '⚡ Ready / In Transit' : 'Pending');
+
+      let step4Class = isDoneOrReturned ? 'done' : (isActiveRental ? 'active-step' : '');
+      let step4Icon = isDoneOrReturned ? '✓' : '⏱️';
+      let step4Time = isDoneOrReturned ? '✓ Completed' : (isActiveRental ? `🟢 Active (${ord.start_date} → ${ord.end_date})` : 'Awaiting Fulfillment');
+
+      let step5Class = isDoneOrReturned ? 'done' : '';
+      let step5Icon = isDoneOrReturned ? '✓' : '🔄';
+      let step5Time = isDoneOrReturned ? `✓ ₹${(ord.deposit_amount || 0).toLocaleString('en-IN')} Refunded` : `Scheduled for ${ord.end_date}`;
+
+      modalBody.innerHTML = `
+        <div class="order-detail-view">
+          <!-- Product Spotlight -->
+          <div class="order-product-spotlight">
+            <img src="${ord.product_image || 'assets/inventory_products.png'}" alt="Product" class="order-product-big-img">
+            <div class="order-product-info">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="order-product-name">${ord.product_name || 'Rental Item'}</div>
+                <span class="order-tag" style="background: #eff6ff; color: #0265fe; border-color: #bfdbfe;">
+                  ${ord.product_category || 'Electronics'}
+                </span>
+              </div>
+              <p class="order-product-desc">
+                ${ord.product_description || 'High quality certified rental equipment, tested and sanitized by store technician before fulfillment.'}
+              </p>
+              <div class="order-product-tags">
+                <span class="order-tag">💰 ₹${(ord.rent_price_per_day || Math.round((ord.total_amount || 1500) / (ord.total_days || 1))).toLocaleString('en-IN')} / Day</span>
+                <span class="order-tag" style="color: #10b981; border-color: #a7f3d0; background: #ecfdf5;">🛡️ ₹${(ord.deposit_amount || 0).toLocaleString('en-IN')} Refundable Deposit</span>
+                <span class="order-tag">📅 ${ord.total_days || 1} Days Rental</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tracking Timeline -->
+          <div class="order-tracking-card">
+            <div class="tracking-header-title">
+              <span>📍 Live Order Tracking</span>
+              <span style="font-size: 11.5px; color: #10b981; font-weight: 700; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                ● Live Sync
+              </span>
+            </div>
+            <div class="tracking-timeline">
+              <div class="tracking-step ${step1Class}">
+                <div class="tracking-step-line"></div>
+                <div class="tracking-step-icon">${step1Icon}</div>
+                <div class="tracking-step-content">
+                  <div class="tracking-step-title">1. Booking Confirmed &amp; Escrow Locked</div>
+                  <div class="tracking-step-desc">Order #${ord.id} received. ₹${(ord.deposit_amount || 0).toLocaleString('en-IN')} deposit held in escrow.</div>
+                  <div class="tracking-step-time">⏱️ Placed: ${ord.created_at ? new Date(ord.created_at).toLocaleDateString() : 'Recently'}</div>
+                </div>
+              </div>
+              <div class="tracking-step ${step2Class}">
+                <div class="tracking-step-line"></div>
+                <div class="tracking-step-icon">${step2Icon}</div>
+                <div class="tracking-step-content">
+                  <div class="tracking-step-title">2. Quality Testing &amp; Packaging</div>
+                  <div class="tracking-step-desc">Hardware check, battery health testing, sensor sanitization.</div>
+                  <div class="tracking-step-time">${step2Time}</div>
+                </div>
+              </div>
+              <div class="tracking-step ${step3Class}">
+                <div class="tracking-step-line"></div>
+                <div class="tracking-step-icon">${step3Icon}</div>
+                <div class="tracking-step-content">
+                  <div class="tracking-step-title">3. ${ord.delivery_type === 'Home Delivery' ? 'Out for Doorstep Delivery' : 'Ready for Counter Pickup'}</div>
+                  <div class="tracking-step-desc">${ord.delivery_type === 'Home Delivery' ? 'Dispatched with verified courier partner.' : 'Available for counter pickup at store.'}</div>
+                  <div class="tracking-step-time">${step3Time}</div>
+                </div>
+              </div>
+              <div class="tracking-step ${step4Class}">
+                <div class="tracking-step-line"></div>
+                <div class="tracking-step-icon">${step4Icon}</div>
+                <div class="tracking-step-content">
+                  <div class="tracking-step-title">4. Active Rental Period</div>
+                  <div class="tracking-step-desc">In customer custody: <b>${ord.start_date}</b> &rarr; <b>${ord.end_date}</b> (${ord.total_days || 1} Days).</div>
+                  <div class="tracking-step-time">${step4Time}</div>
+                </div>
+              </div>
+              <div class="tracking-step ${step5Class}">
+                <div class="tracking-step-icon">${step5Icon}</div>
+                <div class="tracking-step-content">
+                  <div class="tracking-step-title">5. Return &amp; Deposit Refund</div>
+                  <div class="tracking-step-desc">${isDoneOrReturned ? 'Deposit refunded to customer.' : 'Scheduled return on ' + ord.end_date + '.'}</div>
+                  <div class="tracking-step-time">${step5Time}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Price Summary & Customer Info -->
+          <div class="order-info-grid-2col">
+            <div class="order-info-card-box">
+              <div class="order-info-box-title">👤 Customer &amp; Delivery</div>
+              <div style="font-size: 12.5px; display: flex; flex-direction: column; gap: 4px;">
+                <div><b>Name:</b> ${ord.customer_name || 'Customer'}</div>
+                <div><b>Phone:</b> 📞 +91 ${ord.customer_phone || '9876543210'}</div>
+                <div><b>Type:</b> 🚚 ${ord.delivery_type || 'Pickup'}</div>
+                <div><b>Dates:</b> ${ord.start_date} &rarr; ${ord.end_date}</div>
+              </div>
+            </div>
+            <div class="order-info-card-box">
+              <div class="order-info-box-title">💳 Pricing &amp; Escrow</div>
+              <div style="font-size: 12.5px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Rental:</span> <b>₹${(ord.total_amount || 0).toLocaleString('en-IN')}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Escrow Deposit:</span> <b style="color: #10b981;">₹${(ord.deposit_amount || 0).toLocaleString('en-IN')}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 2px;">
+                  <b>Grand Total:</b> <b style="color: #0265fe;">₹${((ord.total_amount || 0) + (ord.deposit_amount || 0)).toLocaleString('en-IN')}</b>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Buttons -->
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 4px;">
+            <button type="button" class="btn-confirm-cancel" onclick="closeUserOrderModal()" style="padding: 8px 16px;">
+              <span>Close</span>
+            </button>
+            <a href="tel:+919876543210" class="btn-rent-direct" style="text-decoration: none; padding: 8px 16px;">
+              <span>📞 Call Store Support</span>
+            </a>
+          </div>
+        </div>
+      `;
+
+      modal.classList.add('active');
+    }
+
+    function closeUserOrderModal() {
+      const modal = document.getElementById('userOrderModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    // Modal backdrop click
+    const userOrderModal = document.getElementById('userOrderModal');
+    if (userOrderModal) {
+      userOrderModal.addEventListener('click', (e) => {
+        if (e.target === userOrderModal) closeUserOrderModal();
+      });
+    }
+
+    function logoutUserAccount() {
+      localStorage.removeItem('renthub_customer_token');
+      localStorage.removeItem('renthub_customer_data');
+      showToast('Signed out of customer account. 🚪', 'info');
+      checkUserSession();
+    }
+
+    // Init
+    checkUserSession();
+  </script>
+</body>
+</html>

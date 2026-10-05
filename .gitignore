@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+!.env.example
+.DS_Store
+*.log
+serviceAccountKey.json
+*serviceAccountKey*.json
+!serviceAccountKey.example.json
+firebase-service-account.json
+*.pem
+*.key

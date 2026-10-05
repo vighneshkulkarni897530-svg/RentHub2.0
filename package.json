@@ -1,0 +1,14 @@
+{
+  "name": "renthub-workspace",
+  "version": "1.0.0",
+  "description": "RentHub - Local Rental Marketplace Platform (Separated Frontend, Backend, Database)",
+  "scripts": {
+    "db:init": "node Database/init.js",
+    "backend": "node Backend/server.js",
+    "backend:dev": "node --watch Backend/server.js",
+    "start": "node Backend/server.js"
+  },
+  "keywords": ["rent", "shop-portal", "marketplace", "rental-system", "inventory"],
+  "author": "RentHub",
+  "license": "ISC"
+}

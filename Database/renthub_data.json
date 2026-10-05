@@ -1,0 +1,96 @@
+{
+  "shops": [
+    {
+      "id": 1,
+      "shop_name": "Apex Gear & Electronics Hub",
+      "owner_name": "Rajesh Sharma",
+      "email": "shop@renthub.com",
+      "phone": "9876543210",
+      "password_hash": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "category": "Electronics & Camera Rentals",
+      "address": "Shop #14, Ground Floor, Cyber Plaza, MG Road",
+      "city": "Bangalore",
+      "gst_number": "29AAAAA0000A1Z5",
+      "logo_url": "https://images.unsplash.com/photo-1556742049-0a67e557b779?auto=format&fit=crop&w=150&q=80",
+      "rating": 4.9,
+      "total_reviews": 0,
+      "is_verified": 1,
+      "created_at": "2026-09-19T07:48:14.837Z"
+    },
+    {
+      "id": 2,
+      "shop_name": "Urban Living Appliances & Furniture",
+      "owner_name": "Ananya Verma",
+      "email": "urbanliving@renthub.com",
+      "phone": "9123456780",
+      "password_hash": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "category": "Home Appliances & Furniture",
+      "address": "Plot 45, Sector 18, Commercial Belt",
+      "city": "Mumbai",
+      "gst_number": "27AAAAA1111B1Z2",
+      "logo_url": "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=150&q=80",
+      "rating": 4.8,
+      "total_reviews": 0,
+      "is_verified": 1,
+      "created_at": "2026-09-19T07:48:14.837Z"
+    }
+  ],
+  "products": [],
+  "users": [
+    {
+      "id": 3,
+      "name": "Vighnesh Suhas Kulkarni",
+      "email": "vighneshkulkarni897530@gmail.com",
+      "phone": "07391010883",
+      "password_hash": "$2a$10$7J69TgBAt8LCkjx7o8SZkuBEY8iWNoSFpGmci7K3/Wl.j.ucKV0YC",
+      "address": "Ecocity 1.0 varale talegaon Dabhade tal-maval Dist Pune",
+      "city": "pune",
+      "pincode": "410507",
+      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "created_at": "2026-09-19T17:13:10.855Z"
+    },
+    {
+      "id": 2,
+      "name": "Aarav Patil",
+      "email": "aarav@example.com",
+      "phone": "9123456780",
+      "password_hash": "$2a$10$BoP2imiWpRVBvbOxq7NiZ.3YAdTdmbbpMAC.v37CYOKPJjuzqiaKC",
+      "address": "MG Road",
+      "city": "Pune",
+      "pincode": "411001",
+      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "created_at": "2026-09-19T15:35:20.728Z"
+    },
+    {
+      "id": 1,
+      "name": "Rahul Sharma",
+      "email": "rahul.sharma@example.com",
+      "phone": "9876543210",
+      "password_hash": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "address": "Flat 402, Green Valley Heights, MG Road",
+      "city": "Pune",
+      "pincode": "411001",
+      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "created_at": "2026-09-19T14:00:00.000Z"
+    }
+  ],
+  "rental_orders": [
+    {
+      "id": 101,
+      "shop_id": 1,
+      "product_id": 1,
+      "customer_name": "Rahul Sharma",
+      "customer_phone": "9876543210",
+      "customer_address": "Flat 402, Green Valley Heights, MG Road, Pune 411001",
+      "start_date": "2026-09-22",
+      "end_date": "2026-09-25",
+      "total_days": 3,
+      "total_amount": 4500,
+      "deposit_amount": 8000,
+      "status": "Active",
+      "delivery_type": "Home Delivery",
+      "payment_status": "Paid",
+      "created_at": "2026-09-19T11:45:57.717Z"
+    }
+  ]
+}

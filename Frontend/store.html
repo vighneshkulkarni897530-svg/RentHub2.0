@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RentHub - Customer Storefront &amp; Rental Booking</title>
+  <link rel="stylesheet" href="css/store.css">
+  <link rel="icon" href="assets/logo.png">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="store-top-header">
+    <div class="store-nav-container">
+      <a href="store.html" class="store-brand">
+        <img src="assets/logo.png" alt="RentHub Logo" class="store-logo-img">
+        <span class="store-badge-text">Verified Storefront</span>
+      </a>
+
+      <div class="store-header-actions">
+        <!-- Account Access Button (Links directly to Full Customer Login Page) -->
+        <a href="user-login.html" class="btn-account-nav" id="openAccountBtn" style="text-decoration: none;">
+          <div class="account-nav-avatar-icon" id="accountNavIcon">👤</div>
+          <div class="account-nav-text-col">
+            <span class="account-nav-label" id="accountNavLabel">Account</span>
+            <span class="account-nav-sub" id="accountNavSub">Access / Login</span>
+          </div>
+        </a>
+
+        <!-- Orders Button (Beside Rental Cart) -->
+        <button type="button" class="btn-orders-nav" id="openOrdersBtn" onclick="openOrdersModal()">
+          <div class="orders-nav-icon-badge">📦</div>
+          <div class="orders-nav-text-col">
+            <span class="orders-nav-label">Orders</span>
+            <span class="orders-nav-sub" id="ordersNavSub">My Bookings</span>
+          </div>
+          <span class="orders-badge-count" id="ordersNavCount" style="display: none;">0</span>
+        </button>
+
+        <!-- Rental Cart Button -->
+        <button type="button" class="btn-cart-nav" id="openCartBtn" onclick="openCartModal()">
+          <img src="assets/cart_3d_icon.png" alt="Cart" class="cart-nav-3d-img">
+          <span class="cart-nav-title">Rental Cart</span>
+          <span class="cart-badge-count" id="cartNavCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Shop Hero Banner -->
+  <section class="shop-hero-banner">
+    <div class="shop-hero-content">
+      <div class="shop-info-box">
+        <div class="shop-avatar">
+          <img id="storeShopLogo" src="assets/inventory_products.png" alt="Shop Avatar">
+        </div>
+        <div>
+          <h1 class="shop-name-title">
+            <span id="storeShopName">Loading Shop...</span>
+            <span class="verified-tag">&#10003; Verified</span>
+          </h1>
+          <div class="shop-meta-row">
+            <div class="shop-meta-item">
+              <span>📍</span>
+              <span id="storeShopAddress">Cyber Plaza, MG Road, Bangalore</span>
+            </div>
+            <div class="shop-meta-item">
+              <span>⭐</span>
+              <span id="storeShopRating">4.9 (Verified Store)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Store Catalog Container -->
+  <main class="store-container">
+    
+    <!-- Toolbar with Search & Category Pills -->
+    <div class="store-toolbar">
+      <div class="store-search-box">
+        <span class="store-search-icon">🔍</span>
+        <input type="text" id="storeSearchInput" placeholder="Search items in this shop...">
+      </div>
+
+      <!-- Categories Pills -->
+      <div class="category-filter-pills" id="storeCategoryPills">
+        <button class="cat-pill active" onclick="filterStoreCategory('All')">🌟 All Products</button>
+      </div>
+    </div>
+
+    <!-- Section Title & Products Grid -->
+    <div class="store-section-header">
+      <h2 class="store-section-title" id="storeCatalogTitle">Available Rental Items</h2>
+      <span style="font-size: 13px; font-weight: 700; color: #0265fe;" id="storeProductCount">0 items</span>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="store-product-grid" id="storeProductGrid">
+      <div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px;">
+        Loading catalog...
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Product Details & Multi-Angle Photo Showcase Modal -->
+  <div class="store-modal-backdrop" id="productDetailModal">
+    <div class="store-modal-box product-detail-modal-box">
+      <div class="store-modal-header" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="customer-cat-badge" id="detailCatBadge" style="margin: 0;">Category</span>
+          <h3 id="detailModalTitle" style="font-size: 18px; font-weight: 800; color: #0a192f; margin: 0;">Product Details</h3>
+        </div>
+        <button class="store-modal-close" id="closeDetailModal" onclick="closeProductDetailModal()">&times;</button>
+      </div>
+
+      <div class="product-detail-modal-grid">
+        <!-- LEFT: Multi-Angle Interactive Viewport & Gallery -->
+        <div class="detail-gallery-col">
+          <div class="detail-main-viewport" id="detailViewport">
+            <img id="detailMainImg" src="" alt="Product Angle" class="detail-main-img">
+            <div id="detailVideoContainer" style="display: none; width: 100%; height: 100%;">
+              <video id="detailMainVideo" controls style="width: 100%; height: 100%; object-fit: contain; background: #000;"></video>
+            </div>
+            <!-- Prev / Next angle arrows -->
+            <button type="button" class="gallery-nav-btn prev-btn" id="galleryPrevBtn" onclick="prevDetailAngle()" title="Previous angle">&#10094;</button>
+            <button type="button" class="gallery-nav-btn next-btn" id="galleryNextBtn" onclick="nextDetailAngle()" title="Next angle">&#10095;</button>
+            <span class="gallery-angle-counter" id="galleryAngleCounter">Angle 1 of 1</span>
+          </div>
+
+          <!-- Horizontal Multi-Angle Thumbnails Strip -->
+          <div class="detail-thumb-strip" id="detailThumbStrip">
+            <!-- Dynamically populated thumbnails -->
+          </div>
+        </div>
+
+        <!-- RIGHT: Description, Availability, Pricing & Actions -->
+        <div class="detail-info-col">
+          <!-- Stock Availability Status Badge -->
+          <div id="detailStockBadgeContainer" class="detail-stock-status-box">
+            <!-- Rendered dynamically: In Stock or Out of Stock -->
+          </div>
+
+          <!-- Pricing Card -->
+          <div class="detail-pricing-card">
+            <div>
+              <div class="detail-price-main">₹<span id="detailPricePerDay">0</span> <span style="font-size: 13px; color: #64748b; font-weight: 600;">/ day</span></div>
+              <div class="detail-deposit-text">🛡️ Refundable Security Deposit: ₹<span id="detailDepositAmount">0</span></div>
+            </div>
+            <div id="detailStockUnits" style="font-size: 12px; font-weight: 700; color: #334155;">
+              <!-- Units count -->
+            </div>
+          </div>
+
+          <!-- Description & Specs Box -->
+          <div class="detail-desc-box">
+            <h4 class="detail-desc-title">📝 Product Description &amp; Specifications</h4>
+            <div id="detailDescriptionText" class="detail-desc-content">
+              <!-- Full product description -->
+            </div>
+          </div>
+
+          <!-- Action Buttons Row -->
+          <div id="detailActionButtons" class="detail-actions-row">
+            <!-- In stock: Add to Cart + Rent Now. Out of stock: Out of stock badge -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Rental Booking Checkout Modal -->
+  <div class="store-modal-backdrop" id="bookingModal">
+    <div class="store-modal-box">
+      <div class="store-modal-header">
+        <h3 style="font-size: 18px; font-weight: 800; color: #0a192f;">📦 Complete Rental Booking</h3>
+        <button class="store-modal-close" id="closeBookingModal">&times;</button>
+      </div>
+
+      <!-- Selected Product Multi-Media Gallery & Video Showcase -->
+      <div class="store-modal-media-showcase">
+        <div class="store-modal-main-viewport" id="modalMainMediaContainer">
+          <img src="" id="modalProductImg" alt="Product" class="store-modal-main-img">
+          <div id="modalVideoWrapper" style="display: none; width: 100%; height: 100%;">
+            <video id="modalProductVideo" controls style="width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 12px;"></video>
+          </div>
+        </div>
+        <!-- Thumbnail strip for multi-media -->
+        <div class="store-modal-thumb-strip" id="modalMediaThumbStrip" style="display: none;">
+          <!-- Dynamically populated thumbnails -->
+        </div>
+      </div>
+
+      <div class="booking-summary-card">
+        <div>
+          <span class="customer-cat-badge" id="modalProductCategory" style="margin-bottom: 4px; display: inline-block;">Category</span>
+          <h4 id="modalProductName" style="font-size: 16px; font-weight: 800; color: #0a192f;">Product Name</h4>
+          <div style="font-size: 13px; color: #0265fe; font-weight: 700; margin-top: 3px;">
+            ₹<span id="modalProductPrice">0</span> / day &bull; Refundable Deposit: ₹<span id="modalProductDeposit">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Booking Form -->
+      <form id="customerBookingForm">
+        <input type="hidden" id="bookingProductId">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="custName" class="form-control" placeholder="John Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" id="custPhone" class="form-control" placeholder="9876543210" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Delivery &amp; Pickup Preference *</label>
+          <select id="custDeliveryType" class="form-control">
+            <option value="Store Pickup">🏬 Store Pickup (Self Pickup from Store)</option>
+            <option value="Home Delivery">🚚 Doorstep Delivery (+ Location Delivery)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Delivery Address (Optional)</label>
+          <input type="text" id="custAddress" class="form-control" placeholder="House/Flat #, Area, Landmark">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Rental Start Date *</label>
+            <input type="date" id="custStartDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rental End Date *</label>
+            <input type="date" id="custEndDate" class="form-control" required>
+          </div>
+        </div>
+
+        <!-- Dynamic Live Price Calculation Breakdown -->
+        <div class="price-breakdown-box">
+          <div class="price-row">
+            <span>Duration:</span>
+            <span id="calcDuration" style="font-weight: 700;">1 Day</span>
+          </div>
+          <div class="price-row">
+            <span>Rental Amount:</span>
+            <span>₹<span id="calcRentAmount">0</span></span>
+          </div>
+          <div class="price-row">
+            <span>Refundable Deposit:</span>
+            <span>₹<span id="calcDeposit">0</span></span>
+          </div>
+          <div class="price-row total">
+            <span>Total Payable Amount:</span>
+            <span>₹<span id="calcTotalPayable">0</span></span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-rent-now" id="submitBookingBtn">
+          <span>Confirm &amp; Book Rental &rarr;</span>
+        </button>
+      </form>
+
+      <!-- Booking Confirmation Success Screen (Hidden by default) -->
+      <div id="bookingSuccessBox" class="order-success-box" style="display: none;">
+        <div class="success-icon-big">🎉</div>
+        <h3 style="font-size: 20px; font-weight: 800; color: #0a192f; margin-bottom: 6px;">Booking Confirmed!</h3>
+        <p style="font-size: 13.5px; color: #64748b; margin-bottom: 18px;">
+          Your rental order <b id="successOrderId" style="color: #0265fe;">#101</b> has been sent directly to the store owner.
+        </p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: left; font-size: 13px; margin-bottom: 20px;">
+          <div style="margin-bottom: 6px;"><b>Customer:</b> <span id="successCustName"></span></div>
+          <div style="margin-bottom: 6px;"><b>Dates:</b> <span id="successDates"></span></div>
+          <div style="margin-bottom: 6px;"><b>Total:</b> <span id="successAmount" style="color: #0265fe; font-weight: 800;"></span></div>
+          <div><b>Status:</b> <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Pending Shop Approval</span></div>
+        </div>
+        <button class="btn-rent-now" onclick="closeSuccessAndReload()">
+          <span>Continue Browsing Store</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Rental Cart Modal / Drawer -->
+  <div class="store-modal-backdrop" id="cartModal">
+    <div class="store-modal-box cart-modal-box">
+      <div class="store-modal-header">
+        <div class="cart-header-title-box">
+          <img src="assets/cart_3d_icon.png" alt="Rental Cart" class="cart-modal-3d-header-icon">
+          <div>
+            <h3 style="font-size: 19px; font-weight: 800; color: #0a192f; margin: 0;">Rental Cart</h3>
+            <span id="cartItemCountSub" style="font-size: 12.5px; color: #64748b; font-weight: 500;">0 Items Selected</span>
+          </div>
+        </div>
+        <button class="store-modal-close" id="closeCartModal" onclick="closeCartModal()">&times;</button>
+      </div>
+
+      <!-- Dynamic Cart Content (Empty State OR Items List + Multi-Item Checkout) -->
+      <div id="cartModalBody" class="cart-modal-body">
+        <!-- Populated via store.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Popup Modal for Cart Item Removal -->
+  <div class="store-modal-backdrop" id="removeConfirmModal" style="z-index: 1050;">
+    <div class="store-modal-box confirm-dialog-box">
+      <div class="confirm-dialog-icon">🗑️</div>
+      <h3 class="confirm-dialog-title">Remove Item from Cart?</h3>
+      <p class="confirm-dialog-desc">
+        Are you sure you want to remove <strong id="confirmRemoveProdName" style="color: #0a192f;">this item</strong> from your rental cart? All other cart items and durations will remain unchanged.
+      </p>
+      <div class="confirm-dialog-actions">
+        <button type="button" class="btn-confirm-cancel" onclick="cancelRemoveCartItem()">
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn-confirm-delete" id="btnConfirmRemoveAction" onclick="confirmExecuteRemove()">
+          <span>Yes, Remove Item</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer / User Account Access & Login Modal -->
+  <div class="store-modal-backdrop" id="accountModal" style="z-index: 1040;">
+    <div class="store-modal-box account-modal-box">
+      
+      <div class="store-modal-header" style="margin-bottom: 16px;">
+        <div class="account-header-title-box">
+          <div class="account-header-icon-badge">👤</div>
+          <div>
+            <h3 style="font-size: 19px; font-weight: 800; color: #0a192f; margin: 0;">Customer Account</h3>
+            <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">Rental Bookings, Security Deposits &amp; Profile</span>
+          </div>
+        </div>
+        <button class="store-modal-close" id="closeAccountModal" onclick="closeAccountModal()">&times;</button>
+      </div>
+
+      <!-- Logged-in State (When Customer session is active) -->
+      <div id="accountLoggedInView" style="display: none;">
+        <div class="account-user-card">
+          <div class="account-avatar-large">👤</div>
+          <div class="account-user-info">
+            <h4 id="accountUserName" class="account-shop-title">Rahul Sharma</h4>
+            <div id="accountUserEmail" class="account-owner-text">rahul.sharma@example.com</div>
+            <div id="accountUserPhone" class="account-contact-text">📞 +91 9876543210</div>
+            <span class="account-verified-pill">&#10003; Verified Customer Account</span>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 16px;">
+          <div style="color: #64748b; font-size: 11.5px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Saved Delivery Address:</div>
+          <div id="accountUserAddress" style="color: #0f172a; font-weight: 600;">Flat 402, Green Valley Heights, MG Road, Pune 411001</div>
+        </div>
+
+        <div class="account-actions-grid">
+          <a href="user-login.html" class="account-action-btn primary">
+            <span>📦 Open My Full Customer Dashboard &rarr;</span>
+          </a>
+          <button type="button" class="account-action-btn secondary" onclick="closeAccountModal(); openCartModal();">
+            <span>🛒 Open Rental Cart &amp; Checkout</span>
+          </button>
+          <button type="button" class="account-action-btn logout" onclick="handleCustomerLogout()">
+            <span>🚪 Sign Out from Customer Account</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Logged-out State with Tabs (Customer Login / Register / Track Orders) -->
+      <div id="accountLoggedOutView">
+        
+        <!-- Tab Navigation -->
+        <div class="account-tabs-nav">
+          <button type="button" class="account-tab-btn active" id="tabUserLoginBtn" onclick="switchAccountTab('userLogin')">
+            <span>👤 Customer Sign In</span>
+          </button>
+          <button type="button" class="account-tab-btn" id="tabUserRegisterBtn" onclick="switchAccountTab('userRegister')">
+            <span>✨ Create Account</span>
+          </button>
+        </div>
+
+        <!-- 1. Customer Sign In Form -->
+        <div id="tabUserLoginContent" class="account-tab-pane active">
+          <div class="account-welcome-banner">
+            <h4 style="font-size: 14.5px; font-weight: 800; color: #0a192f; margin: 0 0 4px 0;">Welcome Customer!</h4>
+            <p style="font-size: 12.5px; color: #64748b; margin: 0;">Sign in to view your rental bookings, deposit refunds, and enjoy 1-click checkout.</p>
+          </div>
+
+          <form id="customerAccountLoginForm" onsubmit="handleCustomerLoginSubmit(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 12px; font-weight: 700; color: #334155;">Email or Phone Number *</label>
+              <input type="text" id="accCustLoginId" class="form-control" placeholder="e.g. rahul.sharma@example.com or 9876543210" required style="height: 40px; font-size: 13.5px;">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 700; color: #334155; margin: 0;">Password *</label>
+                <span onclick="alert('Demo customer password is: user123');" style="font-size: 11.5px; color: #0265fe; font-weight: 600; cursor: pointer;">Demo Password?</span>
+              </div>
+              <div style="position: relative;">
+                <input type="password" id="accCustLoginPassword" class="form-control" placeholder="Enter your customer password" required style="height: 40px; font-size: 13.5px; padding-right: 40px;">
+                <button type="button" class="btn-eye-toggle" onclick="toggleAccPasswordVisibility('accCustLoginPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 15px;">👁️</button>
+              </div>
+            </div>
+
+            <!-- Demo Quick Fill helper -->
+            <div class="acc-demo-fill-box">
+              <button type="button" class="btn-acc-demo-fill" onclick="fillCustomerDemoCredentials()">
+                <span>⚡ 1-Click Demo Customer Login (Rahul Sharma)</span>
+              </button>
+            </div>
+
+            <button type="submit" class="btn-acc-submit" id="custLoginSubmitBtn">
+              <span>🔐 Sign In to Customer Account &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 2. Create Customer Account Form -->
+        <div id="tabUserRegisterContent" class="account-tab-pane" style="display: none;">
+          <form id="customerAccountRegisterForm" onsubmit="handleCustomerRegisterSubmit(event)" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Full Name *</label>
+              <input type="text" id="regCustName" class="form-control" placeholder="e.g. Rahul Sharma" required style="height: 38px; font-size: 13px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Email *</label>
+                <input type="email" id="regCustEmail" class="form-control" placeholder="rahul.sharma@example.com" required style="height: 38px; font-size: 13px;">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Phone Number *</label>
+                <input type="tel" id="regCustPhone" class="form-control" placeholder="9876543210" required style="height: 38px; font-size: 13px;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Delivery Address *</label>
+              <input type="text" id="regCustAddress" class="form-control" placeholder="House No, Street, Landmark" required style="height: 38px; font-size: 13px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">City *</label>
+                <input type="text" id="regCustCity" class="form-control" placeholder="Sangli" required style="height: 38px; font-size: 13px;">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Pincode *</label>
+                <input type="text" id="regCustPincode" class="form-control" placeholder="415305" required style="height: 38px; font-size: 13px;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155;">Create Password *</label>
+              <input type="password" id="regCustPassword" class="form-control" placeholder="Minimum 6 characters" minlength="6" required style="height: 38px; font-size: 13px;">
+            </div>
+
+            <button type="submit" class="btn-acc-submit" id="custRegSubmitBtn" style="margin-top: 4px;">
+              <span>✨ Create Customer Account &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Customer Orders & Bookings Modal -->
+  <div class="store-modal-backdrop" id="ordersModal" style="z-index: 1045;">
+    <div class="store-modal-box orders-modal-box">
+      
+      <div class="store-modal-header" style="margin-bottom: 16px;">
+        <div class="orders-header-title-box">
+          <div class="orders-header-icon-badge">📦</div>
+          <div>
+            <h3 style="font-size: 19px; font-weight: 800; color: #0a192f; margin: 0;">My Rental Orders</h3>
+            <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">Live Bookings, Delivery Status &amp; Refundable Deposits</span>
+          </div>
+        </div>
+        <button class="store-modal-close" id="closeOrdersModal" onclick="closeOrdersModal()">&times;</button>
+      </div>
+
+      <!-- Orders Modal Body (Rendered via JS) -->
+      <div id="ordersModalBody" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Dynamically rendered -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Floating Toast Notification for Cart Actions -->
+  <div class="store-toast-msg" id="storeToast"></div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+</body>
+</html>

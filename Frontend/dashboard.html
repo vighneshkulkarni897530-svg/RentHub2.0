@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RentHub - Shop Owner Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="icon" href="assets/logo.png">
+</head>
+<body>
+
+  <!-- ============================================================
+       VIEW 1: GRAND 3-CARD HUB SELECTOR (ORIGINAL COLOR THEME)
+       ============================================================ -->
+  <div class="hub-view-wrapper" id="hubViewWrapper">
+    <div class="hub-container">
+      
+      <div class="ambient-glow"></div>
+
+      <!-- Top Bar Navigation in Hub -->
+      <header class="hub-top-bar">
+        <div class="hub-brand-badge">
+          <img src="assets/logo.png" alt="RentHub Logo" class="hub-logo-img">
+          <span id="topBrandShopName">RentHub Partner</span>
+        </div>
+
+        <div class="hub-top-actions">
+          <a href="index.html" class="btn-hub-login-link">← Switch Account</a>
+          <button class="btn-hub-logout" id="hubLogoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <!-- Center Grand Shop Header -->
+      <div class="hub-hero-header">
+        <h1 class="hub-shop-title" id="hubShopTitle">
+          <span class="crown-icon">🏪</span>
+          <span id="hubShopTitleText" class="blue-highlight">Apex Gear Hub</span>
+          <span class="crown-icon">🏪</span>
+        </h1>
+        <div class="hub-sub-slogan">YOUR RENTAL MANAGEMENT HUB</div>
+        
+        <!-- Emblem Wave Bars (Original Blue) -->
+        <div class="hub-emblem">
+          <div class="wave-bars">
+            <div class="wave-bar bar-1"></div>
+            <div class="wave-bar bar-2"></div>
+            <div class="wave-bar bar-3"></div>
+            <div class="wave-bar bar-4"></div>
+            <div class="wave-bar bar-5"></div>
+          </div>
+        </div>
+
+        <!-- Section Title -->
+        <h2 class="hub-select-title">SELECT YOUR MODULE</h2>
+        <p class="hub-select-desc">Choose an option to manage your store inventory, rental bookings, or admin profile</p>
+      </div>
+
+      <!-- 3 GRAND CARDS (INVENTORY & PRODUCTS, RENTAL BOOKINGS, ADMIN PROFILE) -->
+      <div class="hub-cards-grid">
+        
+        <!-- CARD 1: INVENTORY & PRODUCTS -->
+        <div class="hub-module-card" id="cardInventory" onclick="openModule('inventorySection')">
+          <div class="card-img-container">
+            <img src="assets/inventory_products.png" alt="Inventory and Products">
+            <span class="card-tag-floating" id="hubTotalProductsTag">0 Items</span>
+          </div>
+          <h3 class="card-title-text">INVENTORY &amp; PRODUCTS</h3>
+          <p class="card-sub-info">Catalog, Add Items, Categories</p>
+          <button class="card-action-btn">Enter Inventory &rarr;</button>
+        </div>
+
+        <!-- CARD 2: RENTAL BOOKINGS -->
+        <div class="hub-module-card" id="cardBookings" onclick="openModule('bookingsSection')">
+          <div class="card-img-container">
+            <img src="assets/rental_bookings.jpg" alt="Rental Bookings">
+            <span class="card-tag-floating" id="hubActiveOrdersTag">0 Active</span>
+          </div>
+          <h3 class="card-title-text">RENTAL BOOKINGS</h3>
+          <p class="card-sub-info">Orders, Approvals &amp; Returns</p>
+          <button class="card-action-btn">View Bookings &rarr;</button>
+        </div>
+
+        <!-- CARD 3: ADMIN PROFILE -->
+        <div class="hub-module-card" id="cardProfile" onclick="openModule('profileSection')">
+          <div class="card-img-container">
+            <img src="assets/admin_profile.jpg" alt="Admin Profile">
+            <span class="card-tag-floating">Verified</span>
+          </div>
+          <h3 class="card-title-text">ADMIN PROFILE</h3>
+          <p class="card-sub-info">Store Details &amp; Settings</p>
+          <button class="card-action-btn">Manage Profile &rarr;</button>
+        </div>
+
+      </div>
+
+      <!-- PUBLIC CUSTOMER STOREFRONT & PRODUCT BOOKING LINK BANNER AT BOTTOM -->
+      <div class="hub-store-link-banner">
+        <div class="store-link-left">
+          <div class="store-link-icon-circle">🛍️</div>
+          <div>
+            <h4 class="store-link-heading">Customer Storefront &amp; Product Link</h4>
+            <p class="store-link-desc">Share this live link with customers so they can view and rent/buy products listed in your inventory.</p>
+          </div>
+        </div>
+
+        <div class="store-link-right">
+          <div class="store-url-box">
+            <span class="url-badge">PUBLIC LINK</span>
+            <input type="text" id="publicStorefrontUrlInput" class="store-url-input" readonly value="http://localhost:5000/store.html?shop=1">
+          </div>
+          <div class="store-btn-group">
+            <button class="btn-copy-store-link" id="copyStoreLinkBtn" onclick="copyStorefrontLink()">
+              <span id="copyBtnIcon">📋</span>
+              <span id="copyBtnText">Copy Link</span>
+            </button>
+            <a href="store.html?shop=1" id="openStorefrontAnchor" target="_blank" class="btn-open-store-link">
+              <span>Open Storefront ↗</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================================
+       VIEW 2: EXPANDED MODULE VIEWS (ORIGINAL COLOR THEME)
+       ============================================================ -->
+  
+  <!-- MODULE 1: INVENTORY & PRODUCTS -->
+  <div class="module-expanded-view" id="inventorySection">
+    <div class="expanded-header-bar">
+      <div>
+        <button class="btn-back-hub" onclick="backToHub()">
+          <span>&larr; Back to Modules</span>
+        </button>
+      </div>
+      <div class="expanded-title">
+        <h2>📦 Inventory &amp; Rental Products</h2>
+        <p>Manage your rental catalog, pricing, stock, and categories</p>
+      </div>
+      <div class="expanded-actions">
+      </div>
+    </div>
+
+    <!-- 2-COLUMN INVENTORY LAYOUT: LEFT CATEGORIES SIDEBAR + RIGHT PRODUCT CATALOG -->
+    <div class="inventory-layout-grid">
+      
+      <!-- LEFT MARGIN / SIDEBAR: CATEGORIES & ADD CATEGORY OPTION -->
+      <aside class="category-sidebar-panel">
+        <div class="sidebar-card">
+          
+          <!-- Sidebar Header -->
+          <div class="sidebar-card-header">
+            <div class="sidebar-title-box">
+              <span class="sidebar-icon">📁</span>
+              <div>
+                <h3 class="sidebar-title">Categories</h3>
+                <span class="sidebar-subtitle" id="sidebarCatCount">0 Categories</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Inline Add Category Box for Store Owner -->
+          <div class="add-cat-inline-box">
+            <div class="inline-box-header">
+              <span class="plus-badge">+</span>
+              <span class="inline-title">Add New Category</span>
+            </div>
+            <form id="sidebarAddCategoryForm" class="sidebar-add-cat-form">
+              <div class="cat-input-row">
+                <input type="text" id="sidebarCatIcon" class="cat-icon-input" value="📦" maxlength="2" title="Category Emoji / Icon" placeholder="📦" required>
+                <input type="text" id="sidebarCatName" class="cat-name-input" placeholder="Category name..." required>
+              </div>
+              <button type="submit" class="btn-sidebar-add-cat">
+                <span>+ Add Category</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Categories List (with selection & product count badges) -->
+          <div class="category-sidebar-list" id="sidebarCategoryList">
+            <!-- Dynamically populated -->
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- RIGHT MAIN CATALOG AREA -->
+      <main class="catalog-main-panel">
+        <div class="catalog-card">
+          
+          <!-- Catalog Toolbar -->
+          <div class="catalog-toolbar">
+            <div class="catalog-heading-box">
+              <h3 id="currentCategoryHeading" class="catalog-heading">All Rental Items</h3>
+              <span class="catalog-count-pill" id="catalogFilteredCount">0 items</span>
+            </div>
+            <div class="catalog-filter-controls">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="productSearchInput" class="catalog-search-input" placeholder="Search rental products...">
+              </div>
+              <button class="btn-add-product-secondary" id="openAddProductModalBtnSecondary">
+                <span>+ Add Item</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Products Grid -->
+          <div class="products-grid" id="productsContainer">
+            <!-- Dynamically rendered -->
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+
+  <!-- MODULE 2: RENTAL BOOKINGS -->
+  <div class="module-expanded-view" id="bookingsSection">
+    <div class="expanded-header-bar">
+      <div>
+        <button class="btn-back-hub" onclick="backToHub()">
+          <span>&larr; Back to Modules</span>
+        </button>
+      </div>
+      <div class="expanded-title">
+        <h2>📋 Customer Rental Bookings</h2>
+        <p>Track active bookings, approve pending requests, and manage returns</p>
+      </div>
+      <div class="expanded-actions">
+        <select id="orderStatusFilter" class="filter-input">
+          <option value="All">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Pending">Pending</option>
+          <option value="Returned">Returned</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Bookings Table Panel -->
+    <div class="dark-panel-card">
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Product</th>
+              <th>Customer</th>
+              <th>Rental Period</th>
+              <th>Total Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <!-- Dynamically rendered -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODULE 3: ADMIN PROFILE -->
+  <div class="module-expanded-view" id="profileSection">
+    <div class="expanded-header-bar">
+      <div>
+        <button class="btn-back-hub" onclick="backToHub()">
+          <span>&larr; Back to Modules</span>
+        </button>
+      </div>
+      <div class="expanded-title">
+        <h2>👤 Admin &amp; Store Profile</h2>
+        <p>Manage verified administrator credentials, store identity, operating hours &amp; customer storefront</p>
+      </div>
+      <div class="expanded-actions">
+        <span class="admin-verified-badge">
+          <span class="verified-dot"></span>
+          ✓ Verified Administrator
+        </span>
+      </div>
+    </div>
+
+    <!-- 1. HERO EXECUTIVE ADMIN CARD -->
+    <div class="admin-hero-card">
+      <div class="admin-hero-left">
+        <div class="admin-avatar-container">
+          <img src="assets/admin_profile.jpg" alt="Admin Profile Avatar" class="admin-avatar-img">
+          <span class="admin-status-online" title="Online & Active">🟢</span>
+        </div>
+        <div class="admin-hero-info">
+          <div class="admin-badge-strip">
+            <span class="pill-badge role-badge">PRIMARY ADMINISTRATOR</span>
+            <span class="pill-badge verified-badge">✓ VERIFIED MERCHANT</span>
+            <span class="pill-badge id-badge" id="profHeroStoreId">STORE #RH-001</span>
+          </div>
+          <h2 class="admin-hero-shop-title" id="profHeroShopName">Apex Gear &amp; Electronics Hub</h2>
+          <p class="admin-hero-owner-sub">
+            <span class="owner-icon">👤</span> Managed by <strong id="profHeroOwnerName">Rajesh Sharma</strong> 
+            <span class="divider-dot">•</span> 
+            <span id="profHeroCategory">Electronics &amp; Gadgets</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics inside Hero -->
+      <div class="admin-hero-metrics">
+        <div class="metric-item">
+          <div class="metric-icon-box">📦</div>
+          <div>
+            <div class="metric-val" id="profHeroInventoryCount">0</div>
+            <div class="metric-lbl">Inventory Items</div>
+          </div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-icon-box">📋</div>
+          <div>
+            <div class="metric-val" id="profHeroActiveCount">0</div>
+            <div class="metric-lbl">Active Rentals</div>
+          </div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-icon-box">🏙️</div>
+          <div>
+            <div class="metric-val" id="profHeroCity">Bangalore</div>
+            <div class="metric-lbl">Registered Hub</div>
+          </div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-icon-box">⭐</div>
+          <div>
+            <div class="metric-val">4.9 / 5.0</div>
+            <div class="metric-lbl">Store Rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 2-COLUMN DETAILED PROFILE GRID -->
+    <form id="adminProfileForm" class="admin-profile-grid">
+      
+      <!-- COLUMN 1: BUSINESS & EXECUTIVE CREDENTIALS -->
+      <div class="admin-detail-card">
+        <div class="admin-card-header">
+          <div class="card-header-left">
+            <div class="card-header-icon">🏪</div>
+            <div>
+              <h3 class="card-header-title">Business &amp; Account Credentials</h3>
+              <p class="card-header-sub">Update registered business information and owner contact details</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-profile-form-body">
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label" for="profOwnerName">
+                <span class="label-icon">👤</span> Owner / Admin Name *
+              </label>
+              <input type="text" id="profOwnerName" class="form-control" placeholder="e.g. Rajesh Sharma" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profShopName">
+                <span class="label-icon">🏪</span> Shop / Store Name *
+              </label>
+              <input type="text" id="profShopName" class="form-control" placeholder="e.g. Apex Gear & Electronics Hub" required>
+            </div>
+          </div>
+
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label" for="profEmail">
+                <span class="label-icon">✉️</span> Official Email Address *
+              </label>
+              <input type="email" id="profEmail" class="form-control" placeholder="shop@renthub.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profPhone">
+                <span class="label-icon">📞</span> Contact Phone Number *
+              </label>
+              <input type="tel" id="profPhone" class="form-control" placeholder="9876543210" required>
+            </div>
+          </div>
+
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label" for="profCategory">
+                <span class="label-icon">🏷️</span> Primary Business Category
+              </label>
+              <input type="text" id="profCategory" class="form-control" placeholder="e.g. Electronics, Cameras & Audio">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profGst">
+                <span class="label-icon">📑</span> GST / Tax Identification No.
+              </label>
+              <input type="text" id="profGst" class="form-control" placeholder="e.g. 29AAAAA0000A1Z5">
+            </div>
+          </div>
+
+          <div class="form-submit-row">
+            <button type="submit" class="btn-save-admin-profile" id="saveProfileBtn">
+              <span>💾 Save Profile Changes</span>
+            </button>
+            <span class="save-hint-text">Updates sync instantly with your store &amp; customer storefront.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 2: LOCATION, TIMINGS & CUSTOMER STOREFRONT -->
+      <div class="admin-detail-card">
+        <div class="admin-card-header">
+          <div class="card-header-left">
+            <div class="card-header-icon">📍</div>
+            <div>
+              <h3 class="card-header-title">Storefront Location &amp; Schedule</h3>
+              <p class="card-header-sub">Physical address for customer returns, timings &amp; public link</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-location-content">
+          <!-- Physical Address Section -->
+          <div class="form-group">
+            <label class="form-label" for="profAddress">
+              <span class="label-icon">🏢</span> Physical Store Address
+            </label>
+            <input type="text" id="profAddress" class="form-control" placeholder="Shop #14, Ground Floor, Cyber Plaza, MG Road">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="profCity">
+              <span class="label-icon">🏙️</span> City &amp; Region
+            </label>
+            <input type="text" id="profCity" class="form-control" placeholder="Bangalore">
+          </div>
+
+          <!-- Operating Hours & Fulfillment Box -->
+          <div class="admin-timing-banner">
+            <div class="timing-icon-circle">🕒</div>
+            <div class="timing-details">
+              <h4 class="timing-title">Store Operating Schedule</h4>
+              <p class="timing-text"><strong>Monday – Sunday:</strong> 09:00 AM – 09:00 PM</p>
+              <p class="timing-sub">⚡ In-Store Customer Pickups &amp; Doorstep Deliveries Enabled</p>
+            </div>
+          </div>
+
+          <!-- Public Customer Storefront Box -->
+          <div class="admin-storefront-share-card">
+            <div class="storefront-share-header">
+              <div class="storefront-share-icon">🛍️</div>
+              <div>
+                <h4 class="storefront-share-title">Public Customer Storefront</h4>
+                <p class="storefront-share-sub">Share this live link with customers to rent directly from your inventory</p>
+              </div>
+            </div>
+
+            <div class="storefront-url-bar">
+              <span class="url-live-tag">LIVE URL</span>
+              <input type="text" id="profStorefrontUrl" class="storefront-url-textbox" readonly value="http://localhost:5000/store.html?shop=1">
+            </div>
+
+            <div class="storefront-actions-row">
+              <button type="button" class="btn-admin-copy-link" onclick="copyStorefrontLink()">
+                <span>📋 Copy Store Link</span>
+              </button>
+              <a href="store.html?shop=1" id="profStorefrontAnchor" target="_blank" class="btn-admin-open-link">
+                <span>↗ Open Storefront</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </form>
+
+
+    <!-- 3. SECURITY & QUICK NAVIGATION SHORTCUT BAR -->
+    <div class="admin-security-bar">
+      <div class="security-info-left">
+        <span class="security-shield">🛡️</span>
+        <div>
+          <div class="security-title">Secure Administrator Session</div>
+          <div class="security-sub">Protected by 256-bit JWT Session Encryption • Signed Merchant ID #RH-001</div>
+        </div>
+      </div>
+      <div class="security-actions-right">
+        <button class="btn-sec-shortcut" onclick="openModule('inventorySection')">
+          <span>📦 Manage Inventory</span>
+        </button>
+        <button class="btn-sec-shortcut" onclick="openModule('bookingsSection')">
+          <span>📋 View Bookings</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+
+
+  <!-- ============================================================
+       MODALS: ADD PRODUCT & CATEGORIES
+       ============================================================ -->
+
+  <!-- ============================================================
+       MODALS: ADD PRODUCT & EDIT PRODUCT
+       ============================================================ -->
+
+  <!-- 1. ADD PRODUCT MODAL -->
+  <div class="modal-backdrop" id="addProductModal">
+    <div class="modal-box modern-modal-box">
+      <div class="modal-header-luxury">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">✨</div>
+          <div>
+            <h3 class="modal-heading">Add New Rental Item</h3>
+            <p class="modal-subheading">Publish item to your catalog and live customer storefront</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-circle" id="closeAddProductModal" title="Close modal">&times;</button>
+      </div>
+
+      <form id="addProductForm" class="modal-form-body">
+        
+        <!-- SECTION 1: PRODUCT INFO -->
+        <div class="form-section-card">
+          <div class="form-section-title">📦 Item Details</div>
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label class="form-label">🏷️ Product Name *</label>
+              <input type="text" id="newProdName" class="form-control form-control-luxury" placeholder="e.g. Sony Alpha 7 IV Camera Kit" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">📁 Category *</label>
+              <select id="newProdCategory" class="form-control form-control-luxury">
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: PRICING & STOCK -->
+        <div class="form-section-card">
+          <div class="form-section-title">💰 Pricing &amp; Stock Availability</div>
+          <div class="form-grid-3col">
+            <div class="form-group">
+              <label class="form-label">Daily Rent (₹) *</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="newProdPriceDay" class="form-control form-control-luxury has-prefix" placeholder="500" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Deposit (₹)</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="newProdDeposit" class="form-control form-control-luxury has-prefix" placeholder="2000" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Stock Units *</label>
+              <input type="number" id="newProdStock" class="form-control form-control-luxury" value="1" min="1" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: PRODUCT MEDIA UPLOADER -->
+        <div class="form-section-card">
+          <div class="media-section-header">
+            <div class="form-section-title" style="margin-bottom: 0;">📸 Product Photos &amp; Videos</div>
+            <span class="media-counter-badge" id="mediaCountBadge">0 Added</span>
+          </div>
+
+          <div class="media-uploader-container">
+            <!-- Modern Dropzone -->
+            <div class="media-dropzone-modern" id="mediaDropzone">
+              <input type="file" id="mediaFileInput" accept="image/*,video/*" multiple style="display: none;">
+              <div class="dropzone-modern-icon">
+                <span class="icon-floating">📸</span>
+              </div>
+              <div class="dropzone-modern-content">
+                <div class="dropzone-modern-title">Click to Upload or Drag &amp; Drop Media</div>
+                <div class="dropzone-modern-sub">Upload high-resolution Photos (JPG, PNG, WebP) or Demonstration Videos (MP4, WebM)</div>
+                <div class="dropzone-format-tags">
+                  <span class="format-tag">Multiple Files Supported</span>
+                  <span class="format-tag">Images</span>
+                  <span class="format-tag">Videos</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Gallery -->
+            <div class="media-preview-grid" id="mediaPreviewGrid" style="display: none;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: DESCRIPTION -->
+        <div class="form-section-card">
+          <div class="form-section-title">📝 Specifications &amp; Included Accessories</div>
+          <div class="form-group">
+            <textarea id="newProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories..."></textarea>
+          </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="modal-actions-footer">
+          <button type="submit" class="btn-modal-submit">
+            <span>✨ Publish Item to Rental Inventory &rarr;</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+
+  <!-- 2. EDIT PRODUCT MODAL -->
+  <div class="modal-backdrop" id="editProductModal">
+    <div class="modal-box modern-modal-box">
+      <div class="modal-header-luxury">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" style="background: rgba(2, 101, 254, 0.1); color: #0265fe;">✏️</div>
+          <div>
+            <h3 class="modal-heading">Edit Rental Item</h3>
+            <p class="modal-subheading">Update pricing, inventory stock, media, and details</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-circle" id="closeEditProductModal" title="Close modal">&times;</button>
+      </div>
+
+      <form id="editProductForm" class="modal-form-body">
+        <input type="hidden" id="editProdId">
+        
+        <!-- SECTION 1: PRODUCT INFO -->
+        <div class="form-section-card">
+          <div class="form-section-title">📦 Item Details</div>
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label class="form-label">🏷️ Product Name *</label>
+              <input type="text" id="editProdName" class="form-control form-control-luxury" placeholder="e.g. Sony Alpha 7 IV Camera Kit" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">📁 Category *</label>
+              <select id="editProdCategory" class="form-control form-control-luxury">
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: PRICING & STOCK -->
+        <div class="form-section-card">
+          <div class="form-section-title">💰 Pricing &amp; Stock Availability</div>
+          <div class="form-grid-4col">
+            <div class="form-group">
+              <label class="form-label">Daily Rent (₹) *</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="editProdPriceDay" class="form-control form-control-luxury has-prefix" placeholder="500" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Deposit (₹)</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="editProdDeposit" class="form-control form-control-luxury has-prefix" placeholder="2000" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Stock *</label>
+              <input type="number" id="editProdStock" class="form-control form-control-luxury" value="1" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Available Units *</label>
+              <input type="number" id="editProdAvailableStock" class="form-control form-control-luxury" value="1" min="0" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: PRODUCT MEDIA UPLOADER -->
+        <div class="form-section-card">
+          <div class="media-section-header">
+            <div class="form-section-title" style="margin-bottom: 0;">📸 Product Photos &amp; Videos</div>
+            <span class="media-counter-badge" id="editMediaCountBadge">0 Added</span>
+          </div>
+
+          <div class="media-uploader-container">
+            <!-- Modern Dropzone -->
+            <div class="media-dropzone-modern" id="editMediaDropzone">
+              <input type="file" id="editMediaFileInput" accept="image/*,video/*" multiple style="display: none;">
+              <div class="dropzone-modern-icon">
+                <span class="icon-floating">📤</span>
+              </div>
+              <div class="dropzone-modern-content">
+                <div class="dropzone-modern-title">Click or Drag &amp; Drop to Add More Media</div>
+                <div class="dropzone-modern-sub">Add or delete photos (JPG, PNG, WebP) and demonstration videos (MP4, WebM)</div>
+                <div class="dropzone-format-tags">
+                  <span class="format-tag">Multiple Uploads</span>
+                  <span class="format-tag">Auto-Cover Selected</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Gallery -->
+            <div class="media-preview-grid" id="editMediaPreviewGrid" style="display: none;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: DESCRIPTION -->
+        <div class="form-section-card">
+          <div class="form-section-title">📝 Specifications &amp; Included Accessories</div>
+          <div class="form-group">
+            <textarea id="editProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories..."></textarea>
+          </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="modal-actions-footer">
+          <button type="submit" class="btn-modal-submit" style="background: linear-gradient(135deg, #0265fe 0%, #004ac2 100%);">
+            <span>💾 Save &amp; Update Rental Item &rarr;</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- CATEGORY MANAGEMENT MODAL -->
+  <div class="modal-backdrop" id="categoryModal">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3>📁 Rental Categories Manager</h3>
+        <button class="modal-close-btn" id="closeCategoryModal">&times;</button>
+      </div>
+      
+      <!-- Create New Category Form -->
+      <form id="addCategoryForm" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+        <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">+ Add New Category</h4>
+        <div style="display: grid; grid-template-columns: 80px 1fr auto; gap: 10px; align-items: flex-end;">
+          <div>
+            <label class="form-label" style="font-size: 12px;">Icon</label>
+            <input type="text" id="newCatIcon" class="form-control" value="📦" style="text-align: center; font-size: 18px; padding: 0 8px;" maxlength="2" required>
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 12px;">Category Name</label>
+            <input type="text" id="newCatName" class="form-control" placeholder="e.g. Drones & Action Cams" required>
+          </div>
+          <button type="submit" class="btn-primary" style="height: 48px; padding: 0 16px;">
+            <span>Add</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Existing Categories List -->
+      <h4 style="font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 8px;">Active Store Categories</h4>
+      <div class="cat-manager-list" id="categoryManagerList">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-msg" id="toastMsg"></div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
