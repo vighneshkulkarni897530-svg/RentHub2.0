@@ -144,7 +144,23 @@ const firestoreAdapter = {
             );
         }
 
-        return products;
+        return products.map(p => ({
+            ...p,
+            variants: (Array.isArray(p.variants) && p.variants.length > 0)
+                ? p.variants
+                : [{
+                    id: 'var_' + (p.id || 'std') + '_1',
+                    product_id: p.id,
+                    color_name: 'Standard',
+                    color_code: '#111827',
+                    rent_price_per_day: parseFloat(p.rent_price_per_day) || 0,
+                    deposit_amount: parseFloat(p.deposit_amount) || 0,
+                    total_stock: parseInt(p.total_stock) || 1,
+                    available_stock: parseInt(p.available_stock !== undefined ? p.available_stock : (p.total_stock || 1)),
+                    media: Array.isArray(p.media) && p.media.length > 0 ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url, is_primary: true }] : []),
+                    specifications: p.description || ''
+                }]
+        }));
     },
 
     getProductById: async (productId) => {
@@ -158,7 +174,23 @@ const firestoreAdapter = {
 
         if (!snap.empty) {
             const doc = snap.docs[0];
-            return { id: doc.data().id || doc.id, _docId: doc.id, ...doc.data() };
+            const p = doc.data();
+            const variants = (Array.isArray(p.variants) && p.variants.length > 0)
+                ? p.variants
+                : [{
+                    id: 'var_' + (p.id || targetId) + '_1',
+                    product_id: targetId,
+                    color_name: 'Standard',
+                    color_code: '#111827',
+                    rent_price_per_day: parseFloat(p.rent_price_per_day) || 0,
+                    deposit_amount: parseFloat(p.deposit_amount) || 0,
+                    total_stock: parseInt(p.total_stock) || 1,
+                    available_stock: parseInt(p.available_stock !== undefined ? p.available_stock : (p.total_stock || 1)),
+                    media: Array.isArray(p.media) && p.media.length > 0 ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url, is_primary: true }] : []),
+                    specifications: p.description || ''
+                }];
+
+            return { id: p.id || doc.id, _docId: doc.id, ...p, variants };
         }
         return null;
     },
@@ -173,8 +205,25 @@ const firestoreAdapter = {
         });
         const newId = maxId + 1;
 
+        // Process variants if provided
+        let variantsList = Array.isArray(productData.variants) ? productData.variants : [];
+        if (variantsList.length === 0) {
+            variantsList = [{
+                id: 'var_' + newId + '_1',
+                product_id: newId,
+                color_name: 'Standard',
+                color_code: '#111827',
+                rent_price_per_day: parseFloat(productData.rent_price_per_day) || 0,
+                deposit_amount: parseFloat(productData.deposit_amount) || 0,
+                total_stock: parseInt(productData.total_stock) || 1,
+                available_stock: parseInt(productData.available_stock !== undefined ? productData.available_stock : productData.total_stock) || 1,
+                media: Array.isArray(productData.media) && productData.media.length > 0 ? productData.media : (productData.image_url ? [{ type: 'image', url: productData.image_url, is_primary: true }] : []),
+                specifications: productData.description || ''
+            }];
+        }
+
         // Determine primary image or first media item
-        let mediaArray = Array.isArray(productData.media) ? productData.media : [];
+        let mediaArray = Array.isArray(productData.media) ? productData.media : (variantsList[0] && variantsList[0].media ? variantsList[0].media : []);
         if (mediaArray.length === 0 && productData.image_url) {
             mediaArray = [{ type: 'image', url: productData.image_url, is_primary: true }];
         }
@@ -188,13 +237,14 @@ const firestoreAdapter = {
             name: productData.name,
             description: productData.description || '',
             category: productData.category || 'General',
-            rent_price_per_day: parseFloat(productData.rent_price_per_day) || 0,
+            rent_price_per_day: parseFloat(productData.rent_price_per_day) || (variantsList[0] ? parseFloat(variantsList[0].rent_price_per_day) : 0),
             rent_price_per_month: parseFloat(productData.rent_price_per_month) || 0,
-            deposit_amount: parseFloat(productData.deposit_amount) || 0,
-            total_stock: parseInt(productData.total_stock) || 1,
-            available_stock: parseInt(productData.available_stock !== undefined ? productData.available_stock : productData.total_stock) || 1,
+            deposit_amount: parseFloat(productData.deposit_amount) !== undefined ? parseFloat(productData.deposit_amount) : (variantsList[0] ? parseFloat(variantsList[0].deposit_amount) : 0),
+            total_stock: parseInt(productData.total_stock) || variantsList.reduce((s, v) => s + parseInt(v.total_stock || 1), 0),
+            available_stock: parseInt(productData.available_stock !== undefined ? productData.available_stock : productData.total_stock) || variantsList.reduce((s, v) => s + parseInt(v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1)), 0),
             image_url: primaryImg,
             media: mediaArray,
+            variants: variantsList,
             condition: productData.condition || 'Excellent',
             is_active: 1,
             created_at: new Date().toISOString()
@@ -270,12 +320,15 @@ const firestoreAdapter = {
             const prod = productMap[o.product_id] || {};
             return {
                 ...o,
-                product_name: o.product_name || prod.name || 'Sony FX3 Cinema Camera Kit',
+                variant_id: o.variant_id || null,
+                variant_color: o.variant_color || null,
+                variant_color_code: o.variant_color_code || null,
+                product_name: o.product_name || prod.name || 'Rental Item',
                 product_image: o.product_image || prod.image_url || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80',
-                product_category: o.product_category || prod.category || 'Electronics & Camera Rentals',
-                product_description: prod.description || o.product_description || 'Professional cinema camera with 4K 120fps recording, XLR audio handle, 2x 160GB CFexpress cards, 3x batteries, and full cage rig.',
-                rent_price_per_day: prod.rent_price_per_day || (o.total_amount && o.total_days ? Math.round(o.total_amount / o.total_days) : 1500),
-                deposit_amount: o.deposit_amount || prod.deposit_amount || 8000
+                product_category: o.product_category || prod.category || 'General',
+                product_description: prod.description || o.product_description || '',
+                rent_price_per_day: prod.rent_price_per_day || (o.total_amount && o.total_days ? Math.round(o.total_amount / o.total_days) : 0),
+                deposit_amount: o.deposit_amount !== undefined ? o.deposit_amount : (prod.deposit_amount || 0)
             };
         });
     },
@@ -294,8 +347,12 @@ const firestoreAdapter = {
             id: newId,
             shop_id: parseInt(orderData.shop_id),
             product_id: parseInt(orderData.product_id),
+            variant_id: orderData.variant_id || null,
+            variant_color: orderData.variant_color || null,
+            variant_color_code: orderData.variant_color_code || null,
             customer_name: orderData.customer_name,
             customer_phone: orderData.customer_phone,
+            customer_email: orderData.customer_email || '',
             customer_address: orderData.customer_address || '',
             start_date: orderData.start_date,
             end_date: orderData.end_date,
@@ -309,6 +366,33 @@ const firestoreAdapter = {
         };
 
         const docRef = await db.collection('rental_orders').add(newOrder);
+
+        // Update variant and product stock in Firestore
+        try {
+            const prodSnap = await db.collection('products').where('id', '==', parseInt(orderData.product_id)).limit(1).get();
+            if (!prodSnap.empty) {
+                const pDoc = prodSnap.docs[0];
+                const pData = pDoc.data();
+                let pVariants = Array.isArray(pData.variants) ? [...pData.variants] : [];
+                let pAvail = Math.max(0, (pData.available_stock || 1) - 1);
+                if (pVariants.length > 0 && (orderData.variant_id || orderData.variant_color)) {
+                    pVariants = pVariants.map(v => {
+                        if ((orderData.variant_id && v.id === orderData.variant_id) || (orderData.variant_color && v.color_name === orderData.variant_color)) {
+                            const curStock = parseInt(v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1));
+                            return { ...v, available_stock: Math.max(0, curStock - 1) };
+                        }
+                        return v;
+                    });
+                }
+                await pDoc.ref.update({
+                    available_stock: pAvail,
+                    variants: pVariants
+                });
+            }
+        } catch (stockErr) {
+            console.warn('Firestore stock decrement notice:', stockErr.message);
+        }
+
         return { lastID: newId, docId: docRef.id };
     },
 
@@ -324,10 +408,44 @@ const firestoreAdapter = {
             .get();
 
         if (!snap.empty) {
+            const orderDoc = snap.docs[0];
+            const orderData = orderDoc.data();
+            const prevStatus = orderData.status;
+
             const updateFields = {};
             if (newStatus) updateFields.status = newStatus;
             if (paymentStatus) updateFields.payment_status = paymentStatus;
-            await snap.docs[0].ref.update(updateFields);
+            await orderDoc.ref.update(updateFields);
+
+            // Handle stock return restoration
+            if (newStatus === 'Returned' && prevStatus !== 'Returned') {
+                try {
+                    const prodSnap = await db.collection('products').where('id', '==', parseInt(orderData.product_id)).limit(1).get();
+                    if (!prodSnap.empty) {
+                        const pDoc = prodSnap.docs[0];
+                        const pData = pDoc.data();
+                        let pVariants = Array.isArray(pData.variants) ? [...pData.variants] : [];
+                        let pAvail = Math.min(pData.total_stock || 1, (pData.available_stock || 0) + 1);
+                        if (pVariants.length > 0 && (orderData.variant_id || orderData.variant_color)) {
+                            pVariants = pVariants.map(v => {
+                                if ((orderData.variant_id && v.id === orderData.variant_id) || (orderData.variant_color && v.color_name === orderData.variant_color)) {
+                                    const vTotal = parseInt(v.total_stock || 1);
+                                    const vCur = parseInt(v.available_stock !== undefined ? v.available_stock : vTotal);
+                                    return { ...v, available_stock: Math.min(vTotal, vCur + 1) };
+                                }
+                                return v;
+                            });
+                        }
+                        await pDoc.ref.update({
+                            available_stock: pAvail,
+                            variants: pVariants
+                        });
+                    }
+                } catch (restockErr) {
+                    console.warn('Firestore restock notice:', restockErr.message);
+                }
+            }
+
             return true;
         }
         return false;

@@ -412,6 +412,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (filteredProducts.length > 0) {
             productsContainer.innerHTML = filteredProducts.map(p => {
+                const variantsList = Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : [];
+                const variantCount = variantsList.length;
+                const totalStockCalc = variantCount > 0 ? variantsList.reduce((sum, v) => sum + (parseInt(v.total_stock) || 0), 0) : (p.total_stock || 1);
+                const availStockCalc = variantCount > 0 ? variantsList.reduce((sum, v) => sum + (v.available_stock !== undefined ? parseInt(v.available_stock) : (parseInt(v.total_stock) || 0)), 0) : (p.available_stock !== undefined ? p.available_stock : p.total_stock || 1);
+
                 const mediaList = Array.isArray(p.media) ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url }] : []);
                 const hasVideo = mediaList.some(m => m.type === 'video');
                 const photoCount = mediaList.filter(m => m.type === 'image').length;
@@ -438,6 +443,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div>
                             <span class="product-category-tag">${p.category}</span>
                             <h3 class="product-name">${p.name}</h3>
+                            ${variantCount > 0 ? `
+                                <div class="card-variants-row" title="${variantCount} Colour Variants">
+                                    ${variantsList.slice(0, 4).map(v => `
+                                        <span class="card-variant-chip">
+                                            <span class="color-dot" style="background:${v.color_code || '#111827'};"></span>
+                                            ${v.color_name}
+                                        </span>
+                                    `).join('')}
+                                    ${variantCount > 4 ? `<span class="card-variant-chip" style="font-size:10px;color:#0265fe;font-weight:700;">+${variantCount - 4} more</span>` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                         <div>
                             <div class="product-price-row">
@@ -445,8 +461,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <span class="price">₹${p.rent_price_per_day}</span>
                                     <span style="font-size: 12px; color: #94a3b8;">/ day</span>
                                 </div>
-                                <span class="stock-badge ${p.available_stock > 0 ? 'stock-in' : 'stock-low'}">
-                                    ${p.available_stock} of ${p.total_stock} Available
+                                <span class="stock-badge ${availStockCalc > 0 ? 'stock-in' : 'stock-low'}">
+                                    ${availStockCalc} of ${totalStockCalc} Available
                                 </span>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 10px;">
@@ -482,7 +498,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <img src="${o.product_image}" style="width: 36px; height: 36px; border-radius: 6px; object-fit: cover;">
                             <div>
-                                <div style="font-weight: 700; color: #fff;">${o.product_name}</div>
+                                <div style="font-weight: 700; color: #fff;">
+                                    ${o.product_name}
+                                    ${o.variant_color ? `
+                                        <div class="order-variant-pill">
+                                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${o.variant_color_code || '#0265fe'}; display: inline-block;"></span>
+                                            ${o.variant_color}
+                                        </div>
+                                    ` : ''}
+                                </div>
                                 <div style="font-size: 11px; color: #94a3b8;">${o.product_category}</div>
                             </div>
                         </div>
@@ -548,11 +572,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (orderStatusFilter) orderStatusFilter.addEventListener('change', loadOrders);
 
-    // Modal Handlers
     // =======================================================
-    // MULTI-IMAGE & MULTI-VIDEO PRODUCT MEDIA MANAGER
+    // PREDEFINED COLOR PRESETS
     // =======================================================
+    const PREDEFINED_COLOURS = [
+        { name: 'Black', code: '#111827' },
+        { name: 'Silver', code: '#94a3b8' },
+        { name: 'White', code: '#ffffff' },
+        { name: 'Space Grey', code: '#4b5563' },
+        { name: 'Midnight Blue', code: '#1e3a8a' },
+        { name: 'Forest Green', code: '#14532d' },
+        { name: 'Gold', code: '#d97706' },
+        { name: 'Crimson Red', code: '#b91c1c' },
+        { name: 'Rose Gold', code: '#fb7185' },
+        { name: 'Titanium', code: '#64748b' }
+    ];
+
+    // =======================================================
+    // 7. ADD PRODUCT MODAL: STATE & VARIANT CONTROLLER
+    // =======================================================
+    let addModalVariants = [];
+    let addModalActiveVariantIdx = 0;
     let currentAttachedMedia = [];
+
+    const addVariantTabsBar = document.getElementById('addVariantTabsBar');
+    const addColourPanel = document.getElementById('addColourPanel');
+    const closeAddColourPanel = document.getElementById('closeAddColourPanel');
+    const addPredefinedColorsGrid = document.getElementById('addPredefinedColorsGrid');
+    const addCustomColorPicker = document.getElementById('addCustomColorPicker');
+    const addCustomColorNameInput = document.getElementById('addCustomColorNameInput');
+    const confirmAddCustomColorBtn = document.getElementById('confirmAddCustomColorBtn');
+    const addBannerColorSwatch = document.getElementById('addBannerColorSwatch');
+    const addBannerColorName = document.getElementById('addBannerColorName');
+    const variantCountPill = document.getElementById('variantCountPill');
 
     const mediaDropzone = document.getElementById('mediaDropzone');
     const mediaFileInput = document.getElementById('mediaFileInput');
@@ -596,10 +648,301 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.removeAttachedMedia = (index) => {
         currentAttachedMedia.splice(index, 1);
+        if (addModalVariants[addModalActiveVariantIdx]) {
+            addModalVariants[addModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentAttachedMedia));
+        }
         updateMediaUI();
     };
 
-    // File Drop & Select Handlers
+    function saveAddModalActiveVariantFromForm() {
+        if (!addModalVariants[addModalActiveVariantIdx]) return;
+        const pInput = document.getElementById('newProdPriceDay');
+        const dInput = document.getElementById('newProdDeposit');
+        const sInput = document.getElementById('newProdStock');
+        const descInput = document.getElementById('newProdDesc');
+
+        addModalVariants[addModalActiveVariantIdx].rent_price_per_day = pInput ? (parseFloat(pInput.value) || '') : '';
+        addModalVariants[addModalActiveVariantIdx].deposit_amount = dInput ? (parseFloat(dInput.value) || 0) : 0;
+        addModalVariants[addModalActiveVariantIdx].total_stock = sInput ? (parseInt(sInput.value) || 1) : 1;
+        addModalVariants[addModalActiveVariantIdx].available_stock = sInput ? (parseInt(sInput.value) || 1) : 1;
+        addModalVariants[addModalActiveVariantIdx].specifications = descInput ? descInput.value.trim() : '';
+        addModalVariants[addModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentAttachedMedia));
+    }
+
+    function loadAddModalVariantIntoForm(index) {
+        if (!addModalVariants[index]) return;
+        addModalActiveVariantIdx = index;
+        const variant = addModalVariants[index];
+
+        const pInput = document.getElementById('newProdPriceDay');
+        const dInput = document.getElementById('newProdDeposit');
+        const sInput = document.getElementById('newProdStock');
+        const descInput = document.getElementById('newProdDesc');
+
+        if (pInput) pInput.value = variant.rent_price_per_day !== undefined ? variant.rent_price_per_day : '';
+        if (dInput) dInput.value = variant.deposit_amount !== undefined ? variant.deposit_amount : '';
+        if (sInput) sInput.value = variant.total_stock || 1;
+        if (descInput) descInput.value = variant.specifications || '';
+
+        currentAttachedMedia = Array.isArray(variant.media) ? JSON.parse(JSON.stringify(variant.media)) : [];
+        updateMediaUI();
+
+        if (addBannerColorSwatch) addBannerColorSwatch.style.background = variant.color_code || '#111827';
+        if (addBannerColorName) addBannerColorName.textContent = variant.color_name;
+        if (variantCountPill) {
+            variantCountPill.textContent = `${addModalVariants.length} Colour Variant${addModalVariants.length === 1 ? '' : 's'}`;
+        }
+
+        const pTitle = document.getElementById('addPricingSectionTitle');
+        if (pTitle) {
+            pTitle.innerHTML = `💰 Pricing &amp; Stock for: <span style="display:inline-flex; align-items:center; gap:5px; background:rgba(2,101,254,0.08); padding:2px 9px; border-radius:6px; font-weight:800; color:#0265fe;"><span style="width:9px; height:9px; border-radius:50%; background:${variant.color_code || '#111827'}; display:inline-block; border:1px solid rgba(0,0,0,0.2);"></span>${variant.color_name}</span>`;
+        }
+
+        renderAddVariantTabs();
+        renderAddVariantPricingMatrix();
+    }
+
+    function renderAddVariantPricingMatrix() {
+        const matrixEl = document.getElementById('addVariantPricingMatrix');
+        if (!matrixEl) return;
+
+        if (addModalVariants.length <= 1) {
+            matrixEl.style.display = 'none';
+            matrixEl.innerHTML = '';
+            return;
+        }
+
+        matrixEl.style.display = 'block';
+        matrixEl.innerHTML = `
+            <div class="variant-matrix-header">
+                <span class="variant-matrix-title">📊 Individual Pricing &amp; Stock for Every Colour</span>
+                <span style="font-size: 11px; color: #64748b;">Click any row to configure that colour's price &amp; stock</span>
+            </div>
+            <table class="variant-matrix-table">
+                <thead>
+                    <tr>
+                        <th>Colour</th>
+                        <th>Daily Rent</th>
+                        <th>Security Deposit</th>
+                        <th>Stock</th>
+                        <th style="text-align: right;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${addModalVariants.map((v, idx) => {
+                        const isActive = idx === addModalActiveVariantIdx;
+                        return `
+                            <tr class="variant-matrix-row ${isActive ? 'active-row' : ''}" onclick="window.selectAddVariant(${idx})">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${v.color_code || '#111827'}; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
+                                        <strong>${v.color_name}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${v.rent_price_per_day ? `<b>₹${v.rent_price_per_day}</b> /day` : `<span style="color: #ef4444; font-size: 11.5px;">⚠️ Enter Rent</span>`}
+                                </td>
+                                <td>
+                                    ${v.deposit_amount !== undefined && v.deposit_amount !== '' ? `₹${v.deposit_amount}` : `<span style="color: #94a3b8;">₹0</span>`}
+                                </td>
+                                <td>
+                                    <b>${v.total_stock || 1}</b> units
+                                </td>
+                                <td style="text-align: right;">
+                                    ${isActive ? `<span class="matrix-active-tag">● Currently Editing</span>` : `<button type="button" class="matrix-edit-btn" onclick="window.selectAddVariant(${idx}); event.stopPropagation();">✏️ Edit Price/Stock</button>`}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderAddVariantTabs() {
+        if (!addVariantTabsBar) return;
+
+        let html = addModalVariants.map((v, idx) => {
+            const isActive = idx === addModalActiveVariantIdx;
+            const priceText = v.rent_price_per_day ? `· ₹${v.rent_price_per_day}` : '· Set Rent';
+            const stockText = v.total_stock ? `· ${v.total_stock}u` : '';
+            const canRemove = addModalVariants.length > 1;
+
+            return `
+                <div class="variant-color-tab ${isActive ? 'active' : ''}" onclick="window.selectAddVariant(${idx})">
+                    <span class="variant-color-dot" style="background: ${v.color_code || '#111827'};"></span>
+                    <span class="variant-tab-title">${v.color_name}</span>
+                    <span class="variant-tab-summary">${priceText} ${stockText}</span>
+                    ${canRemove ? `
+                        <button type="button" class="btn-remove-variant-tab" onclick="window.removeAddVariant(${idx}, event)" title="Remove ${v.color_name} variant">&times;</button>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        html += `
+            <button type="button" class="btn-add-colour-tab" id="openAddColourPanelBtn" onclick="window.toggleAddColourPanel()">
+                <span>+ Add Colour</span>
+            </button>
+        `;
+
+        addVariantTabsBar.innerHTML = html;
+    }
+
+    function renderAddPredefinedColors() {
+        if (!addPredefinedColorsGrid) return;
+        addPredefinedColorsGrid.innerHTML = PREDEFINED_COLOURS.map(c => `
+            <button type="button" class="predefined-color-pill" onclick="window.addPredefinedVariant('${c.name}', '${c.code}')">
+                <span class="predefined-color-dot" style="background: ${c.code};"></span>
+                <span>${c.name}</span>
+            </button>
+        `).join('');
+    }
+
+    window.selectAddVariant = (index) => {
+        saveAddModalActiveVariantFromForm();
+        loadAddModalVariantIntoForm(index);
+        const pInput = document.getElementById('newProdPriceDay');
+        if (pInput) pInput.focus();
+    };
+
+    window.toggleAddColourPanel = (forceOpen = null) => {
+        if (!addColourPanel) return;
+        const isOpen = forceOpen !== null ? forceOpen : (addColourPanel.style.display !== 'none');
+        addColourPanel.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen && addCustomColorNameInput) {
+            addCustomColorNameInput.focus();
+        }
+    };
+
+    window.addPredefinedVariant = (name, code) => {
+        const exists = addModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
+        if (exists) {
+            showToast(`The "${name}" colour variant is already added!`, 'error');
+            return;
+        }
+
+        saveAddModalActiveVariantFromForm();
+
+        const newVar = {
+            id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            color_name: name,
+            color_code: code,
+            rent_price_per_day: '',
+            deposit_amount: '',
+            total_stock: 1,
+            available_stock: 1,
+            media: [],
+            specifications: ''
+        };
+
+        addModalVariants.push(newVar);
+        window.toggleAddColourPanel(false);
+        loadAddModalVariantIntoForm(addModalVariants.length - 1);
+        showToast(`Colour "${name}" added! Please enter its daily rent & stock.`, 'success');
+        const pInput = document.getElementById('newProdPriceDay');
+        if (pInput) pInput.focus();
+    };
+
+    window.removeAddVariant = (index, event) => {
+        if (event) event.stopPropagation();
+        if (addModalVariants.length <= 1) {
+            showToast('At least one colour variant is required.', 'error');
+            return;
+        }
+
+        const removedName = addModalVariants[index].color_name;
+        addModalVariants.splice(index, 1);
+
+        if (addModalActiveVariantIdx >= addModalVariants.length) {
+            addModalActiveVariantIdx = addModalVariants.length - 1;
+        } else if (addModalActiveVariantIdx === index) {
+            addModalActiveVariantIdx = Math.max(0, index - 1);
+        }
+
+        loadAddModalVariantIntoForm(addModalActiveVariantIdx);
+        showToast(`Colour variant "${removedName}" removed`, 'info');
+    };
+
+    if (closeAddColourPanel) {
+        closeAddColourPanel.addEventListener('click', () => window.toggleAddColourPanel(false));
+    }
+
+    if (confirmAddCustomColorBtn && addCustomColorNameInput && addCustomColorPicker) {
+        confirmAddCustomColorBtn.addEventListener('click', () => {
+            const name = addCustomColorNameInput.value.trim();
+            const code = addCustomColorPicker.value;
+
+            if (!name) {
+                showToast('Please enter a colour name (e.g. Matte Titanium)', 'error');
+                addCustomColorNameInput.focus();
+                return;
+            }
+
+            const exists = addModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                showToast(`The "${name}" colour variant is already added!`, 'error');
+                return;
+            }
+
+            saveAddModalActiveVariantFromForm();
+
+            const newVar = {
+                id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                color_name: name,
+                color_code: code,
+                rent_price_per_day: '',
+                deposit_amount: '',
+                total_stock: 1,
+                available_stock: 1,
+                media: [],
+                specifications: ''
+            };
+
+            addModalVariants.push(newVar);
+            addCustomColorNameInput.value = '';
+            window.toggleAddColourPanel(false);
+            loadAddModalVariantIntoForm(addModalVariants.length - 1);
+            showToast(`Custom colour "${name}" added! Please set its daily rent & stock.`, 'success');
+            const pInput = document.getElementById('newProdPriceDay');
+            if (pInput) pInput.focus();
+        });
+    }
+
+    // Live Input Listeners for Add Modal Pricing & Stock Sync
+    ['newProdPriceDay', 'newProdDeposit', 'newProdStock', 'newProdDesc'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                saveAddModalActiveVariantFromForm();
+                renderAddVariantTabs();
+                renderAddVariantPricingMatrix();
+            });
+        }
+    });
+
+    function initAddProductModal() {
+        addModalVariants = [
+            {
+                id: 'var_' + Date.now() + '_init',
+                color_name: 'Black',
+                color_code: '#111827',
+                rent_price_per_day: '',
+                deposit_amount: '',
+                total_stock: 1,
+                available_stock: 1,
+                media: [],
+                specifications: ''
+            }
+        ];
+        addModalActiveVariantIdx = 0;
+        currentAttachedMedia = [];
+        renderAddPredefinedColors();
+        loadAddModalVariantIntoForm(0);
+        window.toggleAddColourPanel(false);
+    }
+
+    // Media Dropzone & File Handling for Add Modal
     if (mediaDropzone && mediaFileInput) {
         mediaDropzone.addEventListener('click', () => mediaFileInput.click());
 
@@ -690,6 +1033,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         url: event.target.result,
                         is_primary: currentAttachedMedia.length === 0
                     });
+                    if (addModalVariants[addModalActiveVariantIdx]) {
+                        addModalVariants[addModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentAttachedMedia));
+                    }
                     updateMediaUI();
                 };
                 reader.readAsDataURL(file);
@@ -701,27 +1047,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                         url: compressedUrl,
                         is_primary: currentAttachedMedia.length === 0
                     });
+                    if (addModalVariants[addModalActiveVariantIdx]) {
+                        addModalVariants[addModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentAttachedMedia));
+                    }
                     updateMediaUI();
                 }
             }
         }
     }
 
-    // Modal Handlers
+    // Modal Open & Close Listeners for Add Product
     if (openAddProductModalBtn) {
         openAddProductModalBtn.addEventListener('click', () => {
-            currentAttachedMedia = [];
-            updateMediaUI();
             updateCategoryDropdowns();
+            initAddProductModal();
             addProductModal.classList.add('active');
         });
     }
 
     if (openAddProductModalBtnSecondary) {
         openAddProductModalBtnSecondary.addEventListener('click', () => {
-            currentAttachedMedia = [];
-            updateMediaUI();
             updateCategoryDropdowns();
+            initAddProductModal();
             addProductModal.classList.add('active');
         });
     }
@@ -738,23 +1085,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ADD PRODUCT FORM SUBMISSION WITH VARIANTS
     if (addProductForm) {
         addProductForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Save active inputs into the currently selected variant
+            saveAddModalActiveVariantFromForm();
+
             const nameInput = document.getElementById('newProdName');
             const catSelect = document.getElementById('newProdCategory');
-            const priceInput = document.getElementById('newProdPriceDay');
-            const depositInput = document.getElementById('newProdDeposit');
-            const stockInput = document.getElementById('newProdStock');
-            const descInput = document.getElementById('newProdDesc');
 
             const nameVal = nameInput ? nameInput.value.trim() : '';
             const catVal = (catSelect && catSelect.value) ? catSelect.value : 'General';
-            const priceVal = priceInput ? parseFloat(priceInput.value) : 0;
-            const depositVal = depositInput ? parseFloat(depositInput.value) || 0 : 0;
-            const stockVal = stockInput ? parseInt(stockInput.value) || 1 : 1;
-            const descVal = descInput ? descInput.value.trim() : '';
 
             if (!nameVal) {
                 showToast('Please enter a Product Name', 'error');
@@ -765,44 +1108,76 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            if (!priceVal || priceVal <= 0) {
-                showToast('Please enter a valid Daily Rental Price (₹)', 'error');
-                if (priceInput) {
-                    priceInput.focus();
-                    priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+            if (!addModalVariants || addModalVariants.length === 0) {
+                showToast('At least one colour variant must be created.', 'error');
                 return;
             }
 
-            // Default fallback if no media attached
-            let primaryImg = '';
-            if (currentAttachedMedia.length > 0) {
-                const primary = currentAttachedMedia.find(m => m.is_primary) || currentAttachedMedia[0];
-                primaryImg = primary.url;
-            } else {
-                primaryImg = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
-                currentAttachedMedia.push({ type: 'image', url: primaryImg, is_primary: true });
+            // Validate each colour variant
+            for (let i = 0; i < addModalVariants.length; i++) {
+                const v = addModalVariants[i];
+                if (!v.color_name || !v.color_name.trim()) {
+                    showToast(`Please enter a colour name for variant #${i + 1}`, 'error');
+                    loadAddModalVariantIntoForm(i);
+                    return;
+                }
+
+                const price = parseFloat(v.rent_price_per_day);
+                if (isNaN(price) || price <= 0) {
+                    showToast(`Please enter a valid Daily Rental Price (₹) for [${v.color_name}]`, 'error');
+                    loadAddModalVariantIntoForm(i);
+                    const pInput = document.getElementById('newProdPriceDay');
+                    if (pInput) pInput.focus();
+                    return;
+                }
+
+                const stock = parseInt(v.total_stock);
+                if (isNaN(stock) || stock < 1) {
+                    showToast(`Please enter a valid Stock (minimum 1 unit) for [${v.color_name}]`, 'error');
+                    loadAddModalVariantIntoForm(i);
+                    const sInput = document.getElementById('newProdStock');
+                    if (sInput) sInput.focus();
+                    return;
+                }
+
+                // Fallback media if variant has no media attached
+                if (!v.media || v.media.length === 0) {
+                    v.media = [{
+                        type: 'image',
+                        url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+                        is_primary: true
+                    }];
+                }
             }
 
-            const newProd = {
+            // Calculate aggregate product fields for backward compatibility & indexing
+            const primaryVariant = addModalVariants[0];
+            const totalStockAll = addModalVariants.reduce((sum, v) => sum + parseInt(v.total_stock), 0);
+            const totalAvailAll = addModalVariants.reduce((sum, v) => sum + parseInt(v.available_stock || v.total_stock), 0);
+            const primaryMediaItem = primaryVariant.media.find(m => m.is_primary) || primaryVariant.media[0] || {};
+            const primaryImgUrl = primaryMediaItem.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+
+            const newProdPayload = {
                 name: nameVal,
                 category: catVal,
-                rent_price_per_day: priceVal,
-                deposit_amount: depositVal,
-                total_stock: stockVal,
-                image_url: primaryImg,
-                media: currentAttachedMedia,
-                description: descVal
+                rent_price_per_day: parseFloat(primaryVariant.rent_price_per_day),
+                deposit_amount: parseFloat(primaryVariant.deposit_amount) || 0,
+                total_stock: totalStockAll,
+                available_stock: totalAvailAll,
+                image_url: primaryImgUrl,
+                media: primaryVariant.media,
+                description: primaryVariant.specifications || '',
+                variants: addModalVariants
             };
 
             const submitBtn = addProductForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span>⏳ Publishing Item...</span>';
+                submitBtn.innerHTML = '<span>⏳ Publishing Item &amp; Variants...</span>';
             }
 
             try {
-                const res = await window.API.addProduct(token, newProd);
+                const res = await window.API.addProduct(token, newProdPayload);
 
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -810,11 +1185,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 if (res && res.success) {
-                    showToast('🎉 New rental product published to inventory & storefront!', 'success');
+                    showToast(`🎉 "${nameVal}" (${addModalVariants.length} colour variant${addModalVariants.length === 1 ? '' : 's'}) published to inventory!`, 'success');
                     addProductModal.classList.remove('active');
                     addProductForm.reset();
-                    currentAttachedMedia = [];
-                    updateMediaUI();
+                    initAddProductModal();
                     loadProducts();
                     loadDashboardStats();
                 } else {
@@ -831,12 +1205,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =======================================================
-    // EDIT PRODUCT LOGIC
+    // 8. EDIT PRODUCT MODAL: STATE & VARIANT CONTROLLER
     // =======================================================
+    let editModalVariants = [];
+    let editModalActiveVariantIdx = 0;
     let currentEditMedia = [];
+
     const editProductModal = document.getElementById('editProductModal');
     const closeEditProductModal = document.getElementById('closeEditProductModal');
     const editProductForm = document.getElementById('editProductForm');
+    const editVariantTabsBar = document.getElementById('editVariantTabsBar');
+    const editAddColourPanel = document.getElementById('editAddColourPanel');
+    const closeEditAddColourPanel = document.getElementById('closeEditAddColourPanel');
+    const editPredefinedColorsGrid = document.getElementById('editPredefinedColorsGrid');
+    const editCustomColorPicker = document.getElementById('editCustomColorPicker');
+    const editCustomColorNameInput = document.getElementById('editCustomColorNameInput');
+    const editConfirmAddCustomColorBtn = document.getElementById('editConfirmAddCustomColorBtn');
+    const editBannerColorSwatch = document.getElementById('editBannerColorSwatch');
+    const editBannerColorName = document.getElementById('editBannerColorName');
+    const editVariantCountPill = document.getElementById('editVariantCountPill');
+
     const editMediaDropzone = document.getElementById('editMediaDropzone');
     const editMediaFileInput = document.getElementById('editMediaFileInput');
     const editMediaPreviewGrid = document.getElementById('editMediaPreviewGrid');
@@ -859,6 +1247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         editMediaCountBadge.textContent = `${total} Attached (${photoCount} 📷, ${videoCount} 🎬)`;
         editMediaPreviewGrid.style.display = 'grid';
 
+        mediaPreviewGrid.innerHTML = '';
         editMediaPreviewGrid.innerHTML = currentEditMedia.map((m, idx) => `
             <div class="media-preview-card ${idx === 0 ? 'is-cover' : ''}">
                 ${m.type === 'image' ? `
@@ -879,8 +1268,288 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.removeEditMedia = (index) => {
         currentEditMedia.splice(index, 1);
+        if (editModalVariants[editModalActiveVariantIdx]) {
+            editModalVariants[editModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentEditMedia));
+        }
         updateEditMediaUI();
     };
+
+    function saveEditModalActiveVariantFromForm() {
+        if (!editModalVariants[editModalActiveVariantIdx]) return;
+        const pInput = document.getElementById('editProdPriceDay');
+        const dInput = document.getElementById('editProdDeposit');
+        const sInput = document.getElementById('editProdStock');
+        const aInput = document.getElementById('editProdAvailableStock');
+        const descInput = document.getElementById('editProdDesc');
+
+        const totalStock = sInput ? (parseInt(sInput.value) || 1) : 1;
+        const availStock = aInput ? parseInt(aInput.value) : totalStock;
+
+        editModalVariants[editModalActiveVariantIdx].rent_price_per_day = pInput ? (parseFloat(pInput.value) || '') : '';
+        editModalVariants[editModalActiveVariantIdx].deposit_amount = dInput ? (parseFloat(dInput.value) || 0) : 0;
+        editModalVariants[editModalActiveVariantIdx].total_stock = totalStock;
+        editModalVariants[editModalActiveVariantIdx].available_stock = Math.min(totalStock, Math.max(0, availStock));
+        editModalVariants[editModalActiveVariantIdx].specifications = descInput ? descInput.value.trim() : '';
+        editModalVariants[editModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentEditMedia));
+    }
+
+    function loadEditModalVariantIntoForm(index) {
+        if (!editModalVariants[index]) return;
+        editModalActiveVariantIdx = index;
+        const variant = editModalVariants[index];
+
+        const pInput = document.getElementById('editProdPriceDay');
+        const dInput = document.getElementById('editProdDeposit');
+        const sInput = document.getElementById('editProdStock');
+        const aInput = document.getElementById('editProdAvailableStock');
+        const descInput = document.getElementById('editProdDesc');
+
+        if (pInput) pInput.value = variant.rent_price_per_day !== undefined ? variant.rent_price_per_day : '';
+        if (dInput) dInput.value = variant.deposit_amount !== undefined ? variant.deposit_amount : '';
+        if (sInput) sInput.value = variant.total_stock || 1;
+        if (aInput) aInput.value = variant.available_stock !== undefined ? variant.available_stock : variant.total_stock || 1;
+        if (descInput) descInput.value = variant.specifications || '';
+
+        currentEditMedia = Array.isArray(variant.media) ? JSON.parse(JSON.stringify(variant.media)) : [];
+        updateEditMediaUI();
+
+        if (editBannerColorSwatch) editBannerColorSwatch.style.background = variant.color_code || '#111827';
+        if (editBannerColorName) editBannerColorName.textContent = variant.color_name;
+        if (editVariantCountPill) {
+            editVariantCountPill.textContent = `${editModalVariants.length} Colour Variant${editModalVariants.length === 1 ? '' : 's'}`;
+        }
+
+        const pTitle = document.getElementById('editPricingSectionTitle');
+        if (pTitle) {
+            pTitle.innerHTML = `💰 Pricing &amp; Stock for: <span style="display:inline-flex; align-items:center; gap:5px; background:rgba(2,101,254,0.08); padding:2px 9px; border-radius:6px; font-weight:800; color:#0265fe;"><span style="width:9px; height:9px; border-radius:50%; background:${variant.color_code || '#111827'}; display:inline-block; border:1px solid rgba(0,0,0,0.2);"></span>${variant.color_name}</span>`;
+        }
+
+        renderEditVariantTabs();
+        renderEditVariantPricingMatrix();
+    }
+
+    function renderEditVariantPricingMatrix() {
+        const matrixEl = document.getElementById('editVariantPricingMatrix');
+        if (!matrixEl) return;
+
+        if (editModalVariants.length <= 1) {
+            matrixEl.style.display = 'none';
+            matrixEl.innerHTML = '';
+            return;
+        }
+
+        matrixEl.style.display = 'block';
+        matrixEl.innerHTML = `
+            <div class="variant-matrix-header">
+                <span class="variant-matrix-title">📊 Individual Pricing &amp; Stock for Every Colour</span>
+                <span style="font-size: 11px; color: #64748b;">Click any row to configure that colour's price &amp; stock</span>
+            </div>
+            <table class="variant-matrix-table">
+                <thead>
+                    <tr>
+                        <th>Colour</th>
+                        <th>Daily Rent</th>
+                        <th>Security Deposit</th>
+                        <th>Total Stock</th>
+                        <th>Available</th>
+                        <th style="text-align: right;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${editModalVariants.map((v, idx) => {
+                        const isActive = idx === editModalActiveVariantIdx;
+                        return `
+                            <tr class="variant-matrix-row ${isActive ? 'active-row' : ''}" onclick="window.selectEditVariant(${idx})">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${v.color_code || '#111827'}; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
+                                        <strong>${v.color_name}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${v.rent_price_per_day ? `<b>₹${v.rent_price_per_day}</b> /day` : `<span style="color: #ef4444; font-size: 11.5px;">⚠️ Enter Rent</span>`}
+                                </td>
+                                <td>
+                                    ${v.deposit_amount !== undefined && v.deposit_amount !== '' ? `₹${v.deposit_amount}` : `<span style="color: #94a3b8;">₹0</span>`}
+                                </td>
+                                <td>
+                                    <b>${v.total_stock || 1}</b> u
+                                </td>
+                                <td>
+                                    <span style="color: #10b981; font-weight: 700;">${v.available_stock !== undefined ? v.available_stock : v.total_stock || 1}</span> u
+                                </td>
+                                <td style="text-align: right;">
+                                    ${isActive ? `<span class="matrix-active-tag">● Currently Editing</span>` : `<button type="button" class="matrix-edit-btn" onclick="window.selectEditVariant(${idx}); event.stopPropagation();">✏️ Edit Price/Stock</button>`}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderEditVariantTabs() {
+        if (!editVariantTabsBar) return;
+
+        let html = editModalVariants.map((v, idx) => {
+            const isActive = idx === editModalActiveVariantIdx;
+            const priceText = v.rent_price_per_day ? `· ₹${v.rent_price_per_day}` : '· Set Rent';
+            const stockText = v.total_stock ? `· ${v.total_stock}u` : '';
+            const canRemove = editModalVariants.length > 1;
+
+            return `
+                <div class="variant-color-tab ${isActive ? 'active' : ''}" onclick="window.selectEditVariant(${idx})">
+                    <span class="variant-color-dot" style="background: ${v.color_code || '#111827'};"></span>
+                    <span class="variant-tab-title">${v.color_name}</span>
+                    <span class="variant-tab-summary">${priceText} ${stockText}</span>
+                    ${canRemove ? `
+                        <button type="button" class="btn-remove-variant-tab" onclick="window.removeEditVariant(${idx}, event)" title="Remove ${v.color_name} variant">&times;</button>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        html += `
+            <button type="button" class="btn-add-colour-tab" id="openEditAddColourPanelBtn" onclick="window.toggleEditAddColourPanel()">
+                <span>+ Add Colour</span>
+            </button>
+        `;
+
+        editVariantTabsBar.innerHTML = html;
+    }
+
+    function renderEditPredefinedColors() {
+        if (!editPredefinedColorsGrid) return;
+        editPredefinedColorsGrid.innerHTML = PREDEFINED_COLOURS.map(c => `
+            <button type="button" class="predefined-color-pill" onclick="window.addEditPredefinedVariant('${c.name}', '${c.code}')">
+                <span class="predefined-color-dot" style="background: ${c.code};"></span>
+                <span>${c.name}</span>
+            </button>
+        `).join('');
+    }
+
+    window.selectEditVariant = (index) => {
+        saveEditModalActiveVariantFromForm();
+        loadEditModalVariantIntoForm(index);
+        const pInput = document.getElementById('editProdPriceDay');
+        if (pInput) pInput.focus();
+    };
+
+    window.toggleEditAddColourPanel = (forceOpen = null) => {
+        if (!editAddColourPanel) return;
+        const isOpen = forceOpen !== null ? forceOpen : (editAddColourPanel.style.display !== 'none');
+        editAddColourPanel.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen && editCustomColorNameInput) {
+            editCustomColorNameInput.focus();
+        }
+    };
+
+    window.addEditPredefinedVariant = (name, code) => {
+        const exists = editModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
+        if (exists) {
+            showToast(`The "${name}" colour variant is already added!`, 'error');
+            return;
+        }
+
+        saveEditModalActiveVariantFromForm();
+
+        const newVar = {
+            id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            color_name: name,
+            color_code: code,
+            rent_price_per_day: '',
+            deposit_amount: '',
+            total_stock: 1,
+            available_stock: 1,
+            media: [],
+            specifications: ''
+        };
+
+        editModalVariants.push(newVar);
+        window.toggleEditAddColourPanel(false);
+        loadEditModalVariantIntoForm(editModalVariants.length - 1);
+        showToast(`Colour variant "${name}" added! Please configure its rent & stock.`, 'success');
+        const pInput = document.getElementById('editProdPriceDay');
+        if (pInput) pInput.focus();
+    };
+
+    window.removeEditVariant = (index, event) => {
+        if (event) event.stopPropagation();
+        if (editModalVariants.length <= 1) {
+            showToast('At least one colour variant is required.', 'error');
+            return;
+        }
+
+        const removedName = editModalVariants[index].color_name;
+        editModalVariants.splice(index, 1);
+
+        if (editModalActiveVariantIdx >= editModalVariants.length) {
+            editModalActiveVariantIdx = editModalVariants.length - 1;
+        } else if (editModalActiveVariantIdx === index) {
+            editModalActiveVariantIdx = Math.max(0, index - 1);
+        }
+
+        loadEditModalVariantIntoForm(editModalActiveVariantIdx);
+        showToast(`Colour variant "${removedName}" removed`, 'info');
+    };
+
+    if (closeEditAddColourPanel) {
+        closeEditAddColourPanel.addEventListener('click', () => window.toggleEditAddColourPanel(false));
+    }
+
+    if (editConfirmAddCustomColorBtn && editCustomColorNameInput && editCustomColorPicker) {
+        editConfirmAddCustomColorBtn.addEventListener('click', () => {
+            const name = editCustomColorNameInput.value.trim();
+            const code = editCustomColorPicker.value;
+
+            if (!name) {
+                showToast('Please enter a colour name (e.g. Space Grey)', 'error');
+                editCustomColorNameInput.focus();
+                return;
+            }
+
+            const exists = editModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                showToast(`The "${name}" colour variant is already added!`, 'error');
+                return;
+            }
+
+            saveEditModalActiveVariantFromForm();
+
+            const newVar = {
+                id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                color_name: name,
+                color_code: code,
+                rent_price_per_day: '',
+                deposit_amount: '',
+                total_stock: 1,
+                available_stock: 1,
+                media: [],
+                specifications: ''
+            };
+
+            editModalVariants.push(newVar);
+            editCustomColorNameInput.value = '';
+            window.toggleEditAddColourPanel(false);
+            loadEditModalVariantIntoForm(editModalVariants.length - 1);
+            showToast(`Custom colour "${name}" added! Please configure its rent & stock.`, 'success');
+            const pInput = document.getElementById('editProdPriceDay');
+            if (pInput) pInput.focus();
+        });
+    }
+
+    // Live Input Listeners for Edit Modal Pricing & Stock Sync
+    ['editProdPriceDay', 'editProdDeposit', 'editProdStock', 'editProdAvailableStock', 'editProdDesc'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                saveEditModalActiveVariantFromForm();
+                renderEditVariantTabs();
+                renderEditVariantPricingMatrix();
+            });
+        }
+    });
 
     if (editMediaDropzone && editMediaFileInput) {
         editMediaDropzone.addEventListener('click', () => editMediaFileInput.click());
@@ -932,6 +1601,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         url: event.target.result,
                         is_primary: currentEditMedia.length === 0
                     });
+                    if (editModalVariants[editModalActiveVariantIdx]) {
+                        editModalVariants[editModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentEditMedia));
+                    }
                     updateEditMediaUI();
                 };
                 reader.readAsDataURL(file);
@@ -943,6 +1615,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         url: compressedUrl,
                         is_primary: currentEditMedia.length === 0
                     });
+                    if (editModalVariants[editModalActiveVariantIdx]) {
+                        editModalVariants[editModalActiveVariantIdx].media = JSON.parse(JSON.stringify(currentEditMedia));
+                    }
                     updateEditMediaUI();
                 }
             }
@@ -955,22 +1630,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('editProdId').value = prod.id;
         document.getElementById('editProdName').value = prod.name || '';
         document.getElementById('editProdCategory').value = prod.category || 'General';
-        document.getElementById('editProdPriceDay').value = prod.rent_price_per_day || '';
-        document.getElementById('editProdDeposit').value = prod.deposit_amount || 0;
-        document.getElementById('editProdStock').value = prod.total_stock || 1;
-        document.getElementById('editProdAvailableStock').value = prod.available_stock !== undefined ? prod.available_stock : prod.total_stock || 1;
-        document.getElementById('editProdDesc').value = prod.description || '';
 
-        // Media
-        if (Array.isArray(prod.media) && prod.media.length > 0) {
-            currentEditMedia = JSON.parse(JSON.stringify(prod.media));
-        } else if (prod.image_url) {
-            currentEditMedia = [{ type: 'image', url: prod.image_url, is_primary: true }];
+        // Load existing variants or initialize default variant for legacy product
+        if (Array.isArray(prod.variants) && prod.variants.length > 0) {
+            editModalVariants = JSON.parse(JSON.stringify(prod.variants));
         } else {
-            currentEditMedia = [];
+            editModalVariants = [
+                {
+                    id: 'var_leg_' + prod.id + '_1',
+                    color_name: 'Standard',
+                    color_code: '#111827',
+                    rent_price_per_day: prod.rent_price_per_day || '',
+                    deposit_amount: prod.deposit_amount || 0,
+                    total_stock: prod.total_stock || 1,
+                    available_stock: prod.available_stock !== undefined ? prod.available_stock : prod.total_stock || 1,
+                    media: Array.isArray(prod.media) && prod.media.length > 0 ? JSON.parse(JSON.stringify(prod.media)) : (prod.image_url ? [{ type: 'image', url: prod.image_url, is_primary: true }] : []),
+                    specifications: prod.description || ''
+                }
+            ];
         }
 
-        updateEditMediaUI();
+        editModalActiveVariantIdx = 0;
+        renderEditPredefinedColors();
+        loadEditModalVariantIntoForm(0);
+        window.toggleEditAddColourPanel(false);
+
         if (editProductModal) editProductModal.classList.add('active');
     };
 
@@ -989,22 +1673,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (editProductForm) {
         editProductForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            saveEditModalActiveVariantFromForm();
+
             const prodId = document.getElementById('editProdId').value;
             const nameInput = document.getElementById('editProdName');
             const catSelect = document.getElementById('editProdCategory');
-            const priceInput = document.getElementById('editProdPriceDay');
-            const depositInput = document.getElementById('editProdDeposit');
-            const stockInput = document.getElementById('editProdStock');
-            const availInput = document.getElementById('editProdAvailableStock');
-            const descInput = document.getElementById('editProdDesc');
 
             const nameVal = nameInput ? nameInput.value.trim() : '';
             const catVal = (catSelect && catSelect.value) ? catSelect.value : 'General';
-            const priceVal = priceInput ? parseFloat(priceInput.value) : 0;
-            const depositVal = depositInput ? parseFloat(depositInput.value) || 0 : 0;
-            const stockVal = stockInput ? parseInt(stockInput.value) || 1 : 1;
-            const availVal = availInput ? parseInt(availInput.value) : stockVal;
-            const descVal = descInput ? descInput.value.trim() : '';
 
             if (!nameVal) {
                 showToast('Please enter a Product Name', 'error');
@@ -1015,34 +1692,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            if (!priceVal || priceVal <= 0) {
-                showToast('Please enter a valid Daily Rental Price (₹)', 'error');
-                if (priceInput) {
-                    priceInput.focus();
-                    priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+            if (!editModalVariants || editModalVariants.length === 0) {
+                showToast('At least one colour variant must exist.', 'error');
                 return;
             }
 
-            let primaryImg = '';
-            if (currentEditMedia.length > 0) {
-                const primary = currentEditMedia.find(m => m.is_primary) || currentEditMedia[0];
-                primaryImg = primary.url;
-            } else {
-                primaryImg = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
-                currentEditMedia.push({ type: 'image', url: primaryImg, is_primary: true });
+            // Validate all variants
+            for (let i = 0; i < editModalVariants.length; i++) {
+                const v = editModalVariants[i];
+                if (!v.color_name || !v.color_name.trim()) {
+                    showToast(`Please enter a colour name for variant #${i + 1}`, 'error');
+                    loadEditModalVariantIntoForm(i);
+                    return;
+                }
+
+                const price = parseFloat(v.rent_price_per_day);
+                if (isNaN(price) || price <= 0) {
+                    showToast(`Please enter a valid Daily Rental Price (₹) for [${v.color_name}]`, 'error');
+                    loadEditModalVariantIntoForm(i);
+                    const pInput = document.getElementById('editProdPriceDay');
+                    if (pInput) pInput.focus();
+                    return;
+                }
+
+                const stock = parseInt(v.total_stock);
+                if (isNaN(stock) || stock < 1) {
+                    showToast(`Please enter a valid Stock (minimum 1 unit) for [${v.color_name}]`, 'error');
+                    loadEditModalVariantIntoForm(i);
+                    const sInput = document.getElementById('editProdStock');
+                    if (sInput) sInput.focus();
+                    return;
+                }
+
+                if (!v.media || v.media.length === 0) {
+                    v.media = [{
+                        type: 'image',
+                        url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+                        is_primary: true
+                    }];
+                }
             }
+
+            // Calculate aggregate product fields
+            const primaryVariant = editModalVariants[0];
+            const totalStockAll = editModalVariants.reduce((sum, v) => sum + parseInt(v.total_stock), 0);
+            const totalAvailAll = editModalVariants.reduce((sum, v) => sum + parseInt(v.available_stock !== undefined ? v.available_stock : v.total_stock), 0);
+            const primaryMediaItem = primaryVariant.media.find(m => m.is_primary) || primaryVariant.media[0] || {};
+            const primaryImgUrl = primaryMediaItem.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
 
             const updatePayload = {
                 name: nameVal,
                 category: catVal,
-                rent_price_per_day: priceVal,
-                deposit_amount: depositVal,
-                total_stock: stockVal,
-                available_stock: availVal,
-                image_url: primaryImg,
-                media: currentEditMedia,
-                description: descVal
+                rent_price_per_day: parseFloat(primaryVariant.rent_price_per_day),
+                deposit_amount: parseFloat(primaryVariant.deposit_amount) || 0,
+                total_stock: totalStockAll,
+                available_stock: totalAvailAll,
+                image_url: primaryImgUrl,
+                media: primaryVariant.media,
+                description: primaryVariant.specifications || '',
+                variants: editModalVariants
             };
 
             const submitBtn = editProductForm.querySelector('button[type="submit"]');
@@ -1056,11 +1764,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>💾 Save & Update Rental Item &rarr;</span>';
+                    submitBtn.innerHTML = '<span>💾 Save &amp; Update Rental Item &rarr;</span>';
                 }
 
                 if (res && res.success) {
-                    showToast('Rental item updated successfully!', 'success');
+                    showToast('Rental item & colour variants updated successfully!', 'success');
                     if (editProductModal) editProductModal.classList.remove('active');
                     loadProducts();
                     loadDashboardStats();
@@ -1070,7 +1778,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (err) {
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>💾 Save & Update Rental Item &rarr;</span>';
+                    submitBtn.innerHTML = '<span>💾 Save &amp; Update Rental Item &rarr;</span>';
                 }
                 showToast('Error updating product: ' + err.message, 'error');
             }

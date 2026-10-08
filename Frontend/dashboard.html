@@ -544,9 +544,55 @@
           </div>
         </div>
 
-        <!-- SECTION 2: PRICING & STOCK -->
+        <!-- SECTION 2: AVAILABLE COLOURS (MULTIPLE VARIANTS) -->
+        <div class="form-section-card variant-colors-section" id="addProdVariantsSection">
+          <div class="variant-section-header">
+            <div class="form-section-title" style="margin-bottom: 0;">🎨 Available Colours</div>
+            <span class="variant-count-pill" id="variantCountPill">1 Colour Variant</span>
+          </div>
+          <p class="variant-section-hint">Select or add multiple colour variants. Each colour variant independently stores its own daily rent, security deposit, stock units, photos, videos, and specifications.</p>
+          
+          <!-- Colour Tabs Row: [ Black ] [ Silver ] [ White ] [+ Add Colour] -->
+          <div class="variant-tabs-bar" id="addVariantTabsBar">
+            <!-- Dynamically populated variant tabs -->
+          </div>
+
+          <!-- Add Colour Dropdown / Palette Panel -->
+          <div class="add-colour-panel" id="addColourPanel" style="display: none;">
+            <div class="add-colour-panel-header">
+              <span class="panel-title">Choose Predefined Colour or Add Custom:</span>
+              <button type="button" class="btn-close-colour-panel" id="closeAddColourPanel" title="Close palette">&times;</button>
+            </div>
+            
+            <!-- Quick Predefined Color Swatches -->
+            <div class="predefined-colors-grid" id="addPredefinedColorsGrid">
+              <!-- Dynamically populated preset color chips -->
+            </div>
+
+            <!-- Custom Colour Input Row -->
+            <div class="custom-color-row">
+              <input type="color" id="addCustomColorPicker" value="#0265fe" class="custom-color-picker" title="Pick custom color swatch">
+              <input type="text" id="addCustomColorNameInput" class="form-control form-control-luxury" placeholder="e.g. Matte Titanium, Sunset Orange, Alpine White">
+              <button type="button" class="btn-add-custom-variant" id="confirmAddCustomColorBtn">
+                <span>+ Add Variant</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Variant Indicator Banner -->
+          <div class="active-variant-badge-bar" id="addActiveVariantBanner">
+            <div class="active-variant-indicator">
+              <span class="active-color-swatch" id="addBannerColorSwatch" style="background: #111827;"></span>
+              <span class="active-color-label">Configuring Variant:</span>
+              <strong class="active-color-name" id="addBannerColorName">Black</strong>
+            </div>
+            <span class="variant-sync-status">✓ Pricing, Stock, Media &amp; Specs apply to this colour</span>
+          </div>
+        </div>
+
+        <!-- SECTION 3: PRICING & STOCK (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
-          <div class="form-section-title">💰 Pricing &amp; Stock Availability</div>
+          <div class="form-section-title" id="addPricingSectionTitle">💰 Pricing &amp; Stock Availability</div>
           <div class="form-grid-3col">
             <div class="form-group">
               <label class="form-label">Daily Rent (₹) *</label>
@@ -567,9 +613,11 @@
               <input type="number" id="newProdStock" class="form-control form-control-luxury" value="1" min="1" required>
             </div>
           </div>
+          <!-- Real-time Multi-Variant Pricing & Stock Summary Overview -->
+          <div class="variant-pricing-matrix-wrap" id="addVariantPricingMatrix" style="display: none;"></div>
         </div>
 
-        <!-- SECTION 3: PRODUCT MEDIA UPLOADER -->
+        <!-- SECTION 4: PRODUCT MEDIA UPLOADER (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
           <div class="media-section-header">
             <div class="form-section-title" style="margin-bottom: 0;">📸 Product Photos &amp; Videos</div>
@@ -585,7 +633,7 @@
               </div>
               <div class="dropzone-modern-content">
                 <div class="dropzone-modern-title">Click to Upload or Drag &amp; Drop Media</div>
-                <div class="dropzone-modern-sub">Upload high-resolution Photos (JPG, PNG, WebP) or Demonstration Videos (MP4, WebM)</div>
+                <div class="dropzone-modern-sub">Upload high-resolution Photos (JPG, PNG, WebP) or Demonstration Videos (MP4, WebM) for this colour</div>
                 <div class="dropzone-format-tags">
                   <span class="format-tag">Multiple Files Supported</span>
                   <span class="format-tag">Images</span>
@@ -601,11 +649,11 @@
           </div>
         </div>
 
-        <!-- SECTION 4: DESCRIPTION -->
+        <!-- SECTION 5: DESCRIPTION & SPECIFICATIONS (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
           <div class="form-section-title">📝 Specifications &amp; Included Accessories</div>
           <div class="form-group">
-            <textarea id="newProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories..."></textarea>
+            <textarea id="newProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories for this variant..."></textarea>
           </div>
         </div>
 
@@ -629,7 +677,7 @@
           <div class="modal-icon-badge" style="background: rgba(2, 101, 254, 0.1); color: #0265fe;">✏️</div>
           <div>
             <h3 class="modal-heading">Edit Rental Item</h3>
-            <p class="modal-subheading">Update pricing, inventory stock, media, and details</p>
+            <p class="modal-subheading">Update pricing, inventory stock, colour variants, media, and details</p>
           </div>
         </div>
         <button type="button" class="modal-close-circle" id="closeEditProductModal" title="Close modal">&times;</button>
@@ -654,9 +702,55 @@
           </div>
         </div>
 
-        <!-- SECTION 2: PRICING & STOCK -->
+        <!-- SECTION 2: AVAILABLE COLOURS (MULTIPLE VARIANTS) -->
+        <div class="form-section-card variant-colors-section" id="editProdVariantsSection">
+          <div class="variant-section-header">
+            <div class="form-section-title" style="margin-bottom: 0;">🎨 Available Colours</div>
+            <span class="variant-count-pill" id="editVariantCountPill">1 Colour Variant</span>
+          </div>
+          <p class="variant-section-hint">Select or add colour variants. Each colour variant independently stores pricing, stock, media, and specifications.</p>
+          
+          <!-- Colour Tabs Row: [ Black ] [ Silver ] [ White ] [+ Add Colour] -->
+          <div class="variant-tabs-bar" id="editVariantTabsBar">
+            <!-- Dynamically populated variant tabs -->
+          </div>
+
+          <!-- Add Colour Dropdown / Palette Panel -->
+          <div class="add-colour-panel" id="editAddColourPanel" style="display: none;">
+            <div class="add-colour-panel-header">
+              <span class="panel-title">Choose Predefined Colour or Add Custom:</span>
+              <button type="button" class="btn-close-colour-panel" id="closeEditAddColourPanel" title="Close palette">&times;</button>
+            </div>
+            
+            <!-- Quick Predefined Color Swatches -->
+            <div class="predefined-colors-grid" id="editPredefinedColorsGrid">
+              <!-- Dynamically populated preset color chips -->
+            </div>
+
+            <!-- Custom Colour Input Row -->
+            <div class="custom-color-row">
+              <input type="color" id="editCustomColorPicker" value="#0265fe" class="custom-color-picker" title="Pick custom color shade">
+              <input type="text" id="editCustomColorNameInput" class="form-control form-control-luxury" placeholder="e.g. Space Grey, Midnight Blue, Silver">
+              <button type="button" class="btn-add-custom-variant" id="editConfirmAddCustomColorBtn">
+                <span>+ Add Variant</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Variant Indicator Banner -->
+          <div class="active-variant-badge-bar" id="editActiveVariantBanner">
+            <div class="active-variant-indicator">
+              <span class="active-color-swatch" id="editBannerColorSwatch" style="background: #111827;"></span>
+              <span class="active-color-label">Configuring Variant:</span>
+              <strong class="active-color-name" id="editBannerColorName">Black</strong>
+            </div>
+            <span class="variant-sync-status">✓ Pricing, Stock, Media &amp; Specs apply to this colour</span>
+          </div>
+        </div>
+
+        <!-- SECTION 3: PRICING & STOCK (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
-          <div class="form-section-title">💰 Pricing &amp; Stock Availability</div>
+          <div class="form-section-title" id="editPricingSectionTitle">💰 Pricing &amp; Stock Availability</div>
           <div class="form-grid-4col">
             <div class="form-group">
               <label class="form-label">Daily Rent (₹) *</label>
@@ -681,9 +775,11 @@
               <input type="number" id="editProdAvailableStock" class="form-control form-control-luxury" value="1" min="0" required>
             </div>
           </div>
+          <!-- Real-time Multi-Variant Pricing & Stock Summary Overview -->
+          <div class="variant-pricing-matrix-wrap" id="editVariantPricingMatrix" style="display: none;"></div>
         </div>
 
-        <!-- SECTION 3: PRODUCT MEDIA UPLOADER -->
+        <!-- SECTION 4: PRODUCT MEDIA UPLOADER (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
           <div class="media-section-header">
             <div class="form-section-title" style="margin-bottom: 0;">📸 Product Photos &amp; Videos</div>
@@ -699,7 +795,7 @@
               </div>
               <div class="dropzone-modern-content">
                 <div class="dropzone-modern-title">Click or Drag &amp; Drop to Add More Media</div>
-                <div class="dropzone-modern-sub">Add or delete photos (JPG, PNG, WebP) and demonstration videos (MP4, WebM)</div>
+                <div class="dropzone-modern-sub">Add or delete photos (JPG, PNG, WebP) and demonstration videos (MP4, WebM) for this colour</div>
                 <div class="dropzone-format-tags">
                   <span class="format-tag">Multiple Uploads</span>
                   <span class="format-tag">Auto-Cover Selected</span>
@@ -714,11 +810,11 @@
           </div>
         </div>
 
-        <!-- SECTION 4: DESCRIPTION -->
+        <!-- SECTION 5: DESCRIPTION & SPECIFICATIONS (BOUND TO SELECTED VARIANT) -->
         <div class="form-section-card">
           <div class="form-section-title">📝 Specifications &amp; Included Accessories</div>
           <div class="form-group">
-            <textarea id="editProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories..."></textarea>
+            <textarea id="editProdDesc" class="form-control form-control-luxury form-textarea" placeholder="Detail key features, condition, included chargers/cables/accessories for this variant..."></textarea>
           </div>
         </div>
 

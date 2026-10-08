@@ -123,10 +123,50 @@ const db = {
 
         if (clean.includes('from products')) {
             if (clean.includes('where id = ? and shop_id = ?')) {
-                return data.products.find(p => p.id === parseInt(params[0]) && p.shop_id === parseInt(params[1])) || null;
+                const prod = data.products.find(p => p.id === parseInt(params[0]) && p.shop_id === parseInt(params[1])) || null;
+                if (prod) {
+                    return {
+                        ...prod,
+                        variants: (Array.isArray(prod.variants) && prod.variants.length > 0)
+                            ? prod.variants
+                            : [{
+                                id: 'var_' + prod.id + '_1',
+                                product_id: prod.id,
+                                color_name: 'Standard',
+                                color_code: '#111827',
+                                rent_price_per_day: parseFloat(prod.rent_price_per_day) || 0,
+                                deposit_amount: parseFloat(prod.deposit_amount) || 0,
+                                total_stock: parseInt(prod.total_stock) || 1,
+                                available_stock: parseInt(prod.available_stock !== undefined ? prod.available_stock : (prod.total_stock || 1)),
+                                media: Array.isArray(prod.media) && prod.media.length > 0 ? prod.media : (prod.image_url ? [{ type: 'image', url: prod.image_url, is_primary: true }] : []),
+                                specifications: prod.description || ''
+                            }]
+                    };
+                }
+                return null;
             }
             if (clean.includes('where id = ?')) {
-                return data.products.find(p => p.id === parseInt(params[0])) || null;
+                const prod = data.products.find(p => p.id === parseInt(params[0])) || null;
+                if (prod) {
+                    return {
+                        ...prod,
+                        variants: (Array.isArray(prod.variants) && prod.variants.length > 0)
+                            ? prod.variants
+                            : [{
+                                id: 'var_' + prod.id + '_1',
+                                product_id: prod.id,
+                                color_name: 'Standard',
+                                color_code: '#111827',
+                                rent_price_per_day: parseFloat(prod.rent_price_per_day) || 0,
+                                deposit_amount: parseFloat(prod.deposit_amount) || 0,
+                                total_stock: parseInt(prod.total_stock) || 1,
+                                available_stock: parseInt(prod.available_stock !== undefined ? prod.available_stock : (prod.total_stock || 1)),
+                                media: Array.isArray(prod.media) && prod.media.length > 0 ? prod.media : (prod.image_url ? [{ type: 'image', url: prod.image_url, is_primary: true }] : []),
+                                specifications: prod.description || ''
+                            }]
+                    };
+                }
+                return null;
             }
             if (clean.includes('count(*) as total_products')) {
                 const shopId = parseInt(params[0]);
@@ -215,7 +255,23 @@ const db = {
                 const searchTerm = params[params.length - 1].replace(/%/g, '').toLowerCase();
                 list = list.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.description && p.description.toLowerCase().includes(searchTerm)));
             }
-            return list;
+            return list.map(p => ({
+                ...p,
+                variants: (Array.isArray(p.variants) && p.variants.length > 0)
+                    ? p.variants
+                    : [{
+                        id: 'var_' + p.id + '_1',
+                        product_id: p.id,
+                        color_name: 'Standard',
+                        color_code: '#111827',
+                        rent_price_per_day: parseFloat(p.rent_price_per_day) || 0,
+                        deposit_amount: parseFloat(p.deposit_amount) || 0,
+                        total_stock: parseInt(p.total_stock) || 1,
+                        available_stock: parseInt(p.available_stock !== undefined ? p.available_stock : (p.total_stock || 1)),
+                        media: Array.isArray(p.media) && p.media.length > 0 ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url, is_primary: true }] : []),
+                        specifications: p.description || ''
+                    }]
+            }));
         }
 
         if (clean.includes('from rental_orders')) {
@@ -232,12 +288,15 @@ const db = {
                 const prod = data.products.find(p => p.id === o.product_id) || {};
                 return {
                     ...o,
-                    product_name: o.product_name || prod.name || 'Sony FX3 Cinema Camera Kit',
+                    variant_id: o.variant_id || null,
+                    variant_color: o.variant_color || null,
+                    variant_color_code: o.variant_color_code || null,
+                    product_name: o.product_name || prod.name || 'Rental Item',
                     product_image: o.product_image || prod.image_url || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80',
-                    product_category: o.product_category || prod.category || 'Electronics & Camera Rentals',
-                    product_description: prod.description || o.product_description || 'Professional cinema camera with 4K 120fps recording, XLR audio handle, 2x 160GB CFexpress cards, 3x batteries, and full cage rig.',
-                    rent_price_per_day: prod.rent_price_per_day || (o.total_amount && o.total_days ? Math.round(o.total_amount / o.total_days) : 1500),
-                    deposit_amount: o.deposit_amount || prod.deposit_amount || 8000
+                    product_category: o.product_category || prod.category || 'General',
+                    product_description: prod.description || o.product_description || '',
+                    rent_price_per_day: prod.rent_price_per_day || (o.total_amount && o.total_days ? Math.round(o.total_amount / o.total_days) : 0),
+                    deposit_amount: o.deposit_amount !== undefined ? o.deposit_amount : (prod.deposit_amount || 0)
                 };
             });
         }
@@ -293,6 +352,14 @@ const db = {
                         mediaArray = [];
                     }
                 }
+                let variantsArray = [];
+                if (params[12]) {
+                    try {
+                        variantsArray = typeof params[12] === 'string' ? JSON.parse(params[12]) : params[12];
+                    } catch (e) {
+                        variantsArray = [];
+                    }
+                }
                 const res = await firestoreAdapter.createProduct({
                     shop_id: params[0],
                     name: params[1],
@@ -305,7 +372,8 @@ const db = {
                     available_stock: params[8],
                     image_url: params[9],
                     condition: params[10],
-                    media: mediaArray
+                    media: mediaArray,
+                    variants: variantsArray
                 });
                 return res || { lastID: null, changes: 0 };
             }
@@ -321,6 +389,15 @@ const db = {
                         mediaArray = undefined;
                     }
                 }
+                let variantsArray = undefined;
+                if (params[12] !== undefined && params[12] !== null) {
+                    try {
+                        variantsArray = typeof params[12] === 'string' ? JSON.parse(params[12]) : params[12];
+                    } catch (e) {
+                        variantsArray = undefined;
+                    }
+                }
+
                 const updatePayload = {};
                 if (params[0] !== undefined && params[0] !== null) updatePayload.name = params[0];
                 if (params[1] !== undefined && params[1] !== null) updatePayload.description = params[1];
@@ -334,6 +411,7 @@ const db = {
                 if (params[9] !== undefined && params[9] !== null) updatePayload.condition = params[9];
                 if (params[10] !== undefined && params[10] !== null) updatePayload.is_active = params[10];
                 if (mediaArray !== undefined) updatePayload.media = mediaArray;
+                if (variantsArray !== undefined) updatePayload.variants = variantsArray;
 
                 const ok = await firestoreAdapter.updateProduct(prodId, shopId, updatePayload);
                 return { lastID: prodId, changes: ok ? 1 : 0 };
@@ -358,7 +436,10 @@ const db = {
                     total_days: params[7],
                     total_amount: params[8],
                     deposit_amount: params[9],
-                    delivery_type: params[10]
+                    delivery_type: params[10],
+                    variant_id: params[11] || null,
+                    variant_color: params[12] || null,
+                    variant_color_code: params[13] || null
                 });
                 return res || { lastID: null, changes: 0 };
             }
@@ -408,6 +489,30 @@ const db = {
                     mediaArray = [];
                 }
             }
+            let variantsArray = [];
+            if (params[12]) {
+                try {
+                    variantsArray = typeof params[12] === 'string' ? JSON.parse(params[12]) : params[12];
+                } catch (e) {
+                    variantsArray = [];
+                }
+            }
+
+            if (variantsArray.length === 0) {
+                variantsArray = [{
+                    id: 'var_' + newId + '_1',
+                    product_id: newId,
+                    color_name: 'Standard',
+                    color_code: '#111827',
+                    rent_price_per_day: parseFloat(params[4]) || 0,
+                    deposit_amount: parseFloat(params[6]) || 0,
+                    total_stock: parseInt(params[7]) || 1,
+                    available_stock: parseInt(params[8] !== undefined ? params[8] : params[7]) || 1,
+                    media: mediaArray.length > 0 ? mediaArray : (params[9] ? [{ type: 'image', url: params[9], is_primary: true }] : []),
+                    specifications: params[2] || ''
+                }];
+            }
+
             if (mediaArray.length === 0 && params[9]) {
                 mediaArray = [{ type: 'image', url: params[9], is_primary: true }];
             }
@@ -427,6 +532,7 @@ const db = {
                 available_stock: params[8],
                 image_url: primaryImg,
                 media: mediaArray,
+                variants: variantsArray,
                 condition: params[10],
                 is_active: 1,
                 created_at: new Date().toISOString()
@@ -460,6 +566,13 @@ const db = {
                         p.media = params[11];
                     }
                 }
+                if (params[12] !== undefined && params[12] !== null) {
+                    try {
+                        p.variants = typeof params[12] === 'string' ? JSON.parse(params[12]) : params[12];
+                    } catch (e) {
+                        p.variants = params[12];
+                    }
+                }
                 saveData(data);
                 return { lastID: prodId, changes: 1 };
             }
@@ -481,6 +594,9 @@ const db = {
                 id: newId,
                 shop_id: parseInt(params[0]),
                 product_id: parseInt(params[1]),
+                variant_id: params[11] || null,
+                variant_color: params[12] || null,
+                variant_color_code: params[13] || null,
                 customer_name: params[2],
                 customer_phone: params[3],
                 customer_address: params[4] || '',
@@ -495,6 +611,22 @@ const db = {
                 created_at: new Date().toISOString()
             };
             data.rental_orders.unshift(newOrder);
+
+            // Decrement variant stock & product available stock
+            const targetProd = data.products.find(p => p.id === newOrder.product_id);
+            if (targetProd) {
+                targetProd.available_stock = Math.max(0, (targetProd.available_stock || 1) - 1);
+                if (Array.isArray(targetProd.variants) && (newOrder.variant_id || newOrder.variant_color)) {
+                    targetProd.variants = targetProd.variants.map(v => {
+                        if ((newOrder.variant_id && v.id === newOrder.variant_id) || (newOrder.variant_color && v.color_name === newOrder.variant_color)) {
+                            const curStock = parseInt(v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1));
+                            return { ...v, available_stock: Math.max(0, curStock - 1) };
+                        }
+                        return v;
+                    });
+                }
+            }
+
             saveData(data);
             return { lastID: newId, changes: 1 };
         }
@@ -523,8 +655,28 @@ const db = {
             const shopId = parseInt(params[params.length - 1]);
             const order = data.rental_orders.find(o => o.id === orderId && o.shop_id === shopId);
             if (order) {
+                const prevStatus = order.status;
                 if (params[0]) order.status = params[0];
                 if (params[1]) order.payment_status = params[1];
+
+                // If returned, increment stock on variant & product
+                if (params[0] === 'Returned' && prevStatus !== 'Returned') {
+                    const targetProd = data.products.find(p => p.id === order.product_id);
+                    if (targetProd) {
+                        targetProd.available_stock = Math.min(targetProd.total_stock || 1, (targetProd.available_stock || 0) + 1);
+                        if (Array.isArray(targetProd.variants) && (order.variant_id || order.variant_color)) {
+                            targetProd.variants = targetProd.variants.map(v => {
+                                if ((order.variant_id && v.id === order.variant_id) || (order.variant_color && v.color_name === order.variant_color)) {
+                                    const vTotal = parseInt(v.total_stock || 1);
+                                    const vCur = parseInt(v.available_stock !== undefined ? v.available_stock : vTotal);
+                                    return { ...v, available_stock: Math.min(vTotal, vCur + 1) };
+                                }
+                                return v;
+                            });
+                        }
+                    }
+                }
+
                 saveData(data);
                 return { lastID: orderId, changes: 1 };
             }

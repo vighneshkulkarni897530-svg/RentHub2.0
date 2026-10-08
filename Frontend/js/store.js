@@ -66,8 +66,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailActionButtons = document.getElementById('detailActionButtons');
 
     let activeDetailProduct = null;
+    let activeDetailVariant = null;
     let detailMediaList = [];
     let currentDetailMediaIdx = 0;
+
+    // Track currently active selected variant on each catalog card
+    const cardActiveVariantMap = {};
+
+    // Helper: Safely get product variants array
+    function getProductVariants(prod) {
+        if (Array.isArray(prod.variants) && prod.variants.length > 0) {
+            return prod.variants;
+        }
+        const mediaArray = Array.isArray(prod.media) && prod.media.length > 0 ? prod.media : (prod.image_url ? [{ type: 'image', url: prod.image_url, is_primary: true }] : []);
+        return [{
+            id: 'var_' + (prod.id || 'std') + '_1',
+            product_id: prod.id,
+            color_name: 'Standard',
+            color_code: '#111827',
+            rent_price_per_day: parseFloat(prod.rent_price_per_day) || 0,
+            deposit_amount: parseFloat(prod.deposit_amount) || 0,
+            total_stock: parseInt(prod.total_stock) || 1,
+            available_stock: parseInt(prod.available_stock !== undefined ? prod.available_stock : (prod.total_stock || 1)),
+            media: mediaArray,
+            specifications: prod.description || ''
+        }];
+    }
+
+    // Helper: Get active variant for a product card
+    function getActiveCardVariant(prod) {
+        const variants = getProductVariants(prod);
+        const selectedId = cardActiveVariantMap[prod.id];
+        if (selectedId) {
+            const found = variants.find(v => v.id === selectedId);
+            if (found) return found;
+        }
+        return variants[0];
+    }
 
     // Helper: Normalize cart items against allProducts catalog
     function getNormalizedCartItems() {
@@ -75,25 +110,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemId = typeof item === 'object' ? item.id : item;
             const matched = allProducts.find(p => p.id == itemId);
             const days = (typeof item === 'object' && item.days) ? item.days : 1;
+            const variantId = typeof item === 'object' ? item.variant_id : null;
+            
             if (matched) {
+                const variants = getProductVariants(matched);
+                const matchedVar = variantId ? (variants.find(v => v.id === variantId) || variants[0]) : variants[0];
+                const vPrice = matchedVar ? parseFloat(matchedVar.rent_price_per_day) : (parseFloat(matched.rent_price_per_day) || 0);
+                const vDeposit = matchedVar && matchedVar.deposit_amount !== undefined ? parseFloat(matchedVar.deposit_amount) : (parseFloat(matched.deposit_amount) || 0);
+                const vMedia = (matchedVar && Array.isArray(matchedVar.media) && matchedVar.media[0]) ? matchedVar.media[0].url : (matched.image_url || '');
+
                 return {
+                    cart_item_id: (typeof item === 'object' && item.cart_item_id) ? item.cart_item_id : `${matched.id}_${matchedVar ? matchedVar.id : 'std'}`,
                     id: matched.id,
+                    variant_id: matchedVar ? matchedVar.id : null,
+                    variant_color: matchedVar ? matchedVar.color_name : null,
+                    variant_color_code: matchedVar ? matchedVar.color_code : null,
                     name: matched.name,
                     category: matched.category,
-                    rent_price_per_day: parseFloat(matched.rent_price_per_day) || 0,
-                    deposit_amount: parseFloat(matched.deposit_amount) || 0,
-                    image_url: matched.image_url || (matched.media && matched.media[0] ? matched.media[0].url : ''),
-                    available_stock: matched.available_stock,
-                    total_stock: matched.total_stock,
+                    rent_price_per_day: vPrice,
+                    deposit_amount: vDeposit,
+                    image_url: vMedia,
+                    available_stock: matchedVar ? (matchedVar.available_stock !== undefined ? matchedVar.available_stock : matchedVar.total_stock) : matched.available_stock,
+                    total_stock: matchedVar ? matchedVar.total_stock : matched.total_stock,
                     days: Math.max(1, days)
                 };
             }
             return typeof item === 'object' ? {
                 ...item,
+                cart_item_id: item.cart_item_id || `${item.id}_${item.variant_id || 'std'}`,
                 rent_price_per_day: parseFloat(item.rent_price_per_day) || 0,
                 deposit_amount: parseFloat(item.deposit_amount) || 0,
                 days: Math.max(1, item.days || 1)
-            } : { id: item, days: 1, name: 'Rental Item', rent_price_per_day: 0, deposit_amount: 0, image_url: '' };
+            } : { cart_item_id: `${item}_std`, id: item, days: 1, name: 'Rental Item', rent_price_per_day: 0, deposit_amount: 0, image_url: '' };
         });
     }
 
@@ -188,8 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =======================================================
-    // 3. Render Product Cards Grid (With Add & Remove Options)
+    // 3. Render Product Cards Grid (With Variant Swatches)
     // =======================================================
+    window.selectCardColorVariant = (prodId, varId) => {
+        cardActiveVariantMap[prodId] = varId;
+        renderProducts();
+    };
+
     function renderProducts() {
         if (!storeProductGrid) return;
         const search = storeSearchInput ? storeSearchInput.value.trim().toLowerCase() : '';
@@ -202,7 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (search) {
             filtered = filtered.filter(p => 
                 p.name.toLowerCase().includes(search) || 
-                (p.description && p.description.toLowerCase().includes(search))
+                (p.description && p.description.toLowerCase().includes(search)) ||
+                (p.variants && p.variants.some(v => v.color_name && v.color_name.toLowerCase().includes(search)))
             );
         }
 
@@ -212,29 +266,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (filtered.length > 0) {
             storeProductGrid.innerHTML = filtered.map(p => {
-                const mediaList = Array.isArray(p.media) ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url }] : []);
-                const hasVideo = mediaList.some(m => m.type === 'video');
-                const photoCount = mediaList.filter(m => m.type === 'image').length;
-                const primaryMedia = mediaList.find(m => m.is_primary) || mediaList[0] || { type: 'image', url: p.image_url };
-                const isAvailable = (p.available_stock !== undefined ? p.available_stock : p.total_stock) > 0;
-                const inCart = cartItems.some(item => (item.id || item) == p.id);
+                const variants = getProductVariants(p);
+                const activeVar = getActiveCardVariant(p);
+                const isMultiColor = variants.length > 1 || (variants.length === 1 && variants[0].color_name && variants[0].color_name !== 'Standard');
+
+                // Media for the active variant
+                const varMedia = (Array.isArray(activeVar.media) && activeVar.media.length > 0)
+                    ? activeVar.media
+                    : (Array.isArray(p.media) && p.media.length > 0 ? p.media : (p.image_url ? [{ type: 'image', url: p.image_url }] : []));
+                
+                const hasVideo = varMedia.some(m => m.type === 'video');
+                const photoCount = varMedia.filter(m => m.type === 'image').length;
+                const primaryMedia = varMedia.find(m => m.is_primary) || varMedia[0] || { type: 'image', url: p.image_url };
+                const varThumb = primaryMedia.url || p.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+
+                const varPrice = activeVar.rent_price_per_day !== undefined ? activeVar.rent_price_per_day : p.rent_price_per_day;
+                const varDeposit = activeVar.deposit_amount !== undefined ? activeVar.deposit_amount : (p.deposit_amount || 0);
+                const varStock = activeVar.available_stock !== undefined ? activeVar.available_stock : (activeVar.total_stock !== undefined ? activeVar.total_stock : p.available_stock);
+                const isAvailable = varStock > 0;
+
+                const cartItemId = `${p.id}_${activeVar.id}`;
+                const inCart = cartItems.some(item => (item.cart_item_id === cartItemId) || ((item.id || item) == p.id && (!item.variant_id || item.variant_id === activeVar.id)));
 
                 return `
                 <div class="customer-product-card">
-                    <div class="customer-product-thumb-wrapper" onclick="openProductDetailsById(${p.id})" title="Click photo to view different angles & details">
+                    <div class="customer-product-thumb-wrapper" onclick="openProductDetailsById(${p.id}, '${activeVar.id}')" title="Click photo to view angles & specifications">
                         ${primaryMedia.type === 'video' ? `
                             <video src="${primaryMedia.url}" style="width: 100%; height: 100%; object-fit: cover;" muted></video>
                             <div class="media-video-icon-overlay" style="width: 38px; height: 38px; font-size: 16px;">▶</div>
                         ` : `
-                            <img src="${p.image_url}" alt="${p.name}" class="customer-product-thumb" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'">
+                            <img src="${varThumb}" alt="${p.name} - ${activeVar.color_name}" class="customer-product-thumb" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'">
                         `}
                         <div class="thumb-hover-overlay">
-                            <span>🔍 View Angles &amp; Details</span>
+                            <span>🔍 View Details &amp; Angles</span>
                         </div>
                         ${inCart ? `
                             <span class="card-in-cart-badge">✓ In Cart</span>
                         ` : ''}
-                        ${mediaList.length > 1 ? `
+                        ${varMedia.length > 1 ? `
                             <span class="card-media-count-badge">
                                 ${hasVideo ? '🎬 Video +' : '📷'} ${photoCount} Angles
                             </span>
@@ -250,28 +319,52 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                                 <span class="customer-cat-badge">${p.category}</span>
                                 ${isAvailable ? `
-                                    <span class="stock-pill in-stock">🟢 ${p.available_stock} Available</span>
+                                    <span class="stock-pill in-stock">🟢 ${varStock} Available</span>
                                 ` : `
                                     <span class="stock-pill out-of-stock">🔴 Out of Stock</span>
                                 `}
                             </div>
-                            <h3 class="customer-product-title" onclick="openProductDetailsById(${p.id})" style="cursor: pointer;" title="Click for specs & angles">${p.name}</h3>
-                            <p class="customer-product-desc">${p.description || 'Quality verified rental product.'}</p>
+                            <h3 class="customer-product-title" onclick="openProductDetailsById(${p.id}, '${activeVar.id}')" style="cursor: pointer;" title="Click for specs & angles">${p.name}</h3>
+                            
+                            <!-- Color Swatches UI -->
+                            ${isMultiColor ? `
+                                <div class="card-variants-row" onclick="event.stopPropagation()">
+                                    <span class="card-variants-label">Colour:</span>
+                                    <div class="card-color-swatches">
+                                        ${variants.map(v => {
+                                            const isSelected = v.id === activeVar.id;
+                                            const vAvail = (v.available_stock !== undefined ? v.available_stock : v.total_stock) > 0;
+                                            const dotColor = v.color_code || '#111827';
+                                            return `
+                                                <button type="button" 
+                                                    class="card-color-chip ${isSelected ? 'active' : ''} ${!vAvail ? 'out-of-stock' : ''}" 
+                                                    onclick="selectCardColorVariant(${p.id}, '${v.id}')"
+                                                    title="${v.color_name} (${vAvail ? `${v.available_stock !== undefined ? v.available_stock : v.total_stock} units available` : 'Out of stock'})">
+                                                    <span class="color-chip-dot" style="background-color: ${dotColor};"></span>
+                                                    <span>${v.color_name}</span>
+                                                </button>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <p class="customer-product-desc">${activeVar.specifications || p.description || 'Quality verified rental product.'}</p>
                         </div>
                         <div>
                             <div class="customer-price-box">
                                 <div>
-                                    <div class="daily-rent-price">₹${p.rent_price_per_day} <span style="font-size: 12px; color: #64748b; font-weight: 500;">/ day</span></div>
-                                    <div class="deposit-info">Deposit: ₹${p.deposit_amount || 0}</div>
+                                    <div class="daily-rent-price">₹${varPrice} <span style="font-size: 12px; color: #64748b; font-weight: 500;">/ day</span></div>
+                                    <div class="deposit-info">Deposit: ₹${varDeposit}</div>
                                 </div>
                             </div>
                             ${!isAvailable ? `
-                                <button class="btn-out-of-stock" onclick="openProductDetailsById(${p.id})">
+                                <button class="btn-out-of-stock" onclick="openProductDetailsById(${p.id}, '${activeVar.id}')">
                                     <span>🔴 Out of Stock (View Details)</span>
                                 </button>
                             ` : inCart ? `
                                 <div class="product-actions-group">
-                                    <button class="btn-remove-from-cart" onclick="removeSingleCartItem(${p.id})" title="Remove product from cart">
+                                    <button class="btn-remove-from-cart" onclick="removeSingleCartItem('${cartItemId}')" title="Remove product from cart">
                                         <span>🗑️ Remove from Cart</span>
                                     </button>
                                     <button class="btn-rent-direct" onclick="openCartModal()" title="View your rental cart">
@@ -280,10 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             ` : `
                                 <div class="product-actions-group">
-                                    <button class="btn-add-to-cart" onclick="addToCartById(${p.id})" title="Add product to rental cart">
+                                    <button class="btn-add-to-cart" onclick="addToCartById(${p.id}, '${activeVar.id}')" title="Add this colour variant to rental cart">
                                         <span>🛒 Add to Cart</span>
                                     </button>
-                                    <button class="btn-rent-direct" onclick="openBookingModalById(${p.id})" title="Book this rental item directly">
+                                    <button class="btn-rent-direct" onclick="openBookingModalById(${p.id}, '${activeVar.id}')" title="Book this colour variant directly">
                                         <span>⚡ Rent Now</span>
                                     </button>
                                 </div>
@@ -306,45 +399,97 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     // 4. Product Details & Multi-Angle Showcase Logic
     // =======================================================
-    window.openProductDetailsById = (prodId) => {
+    window.openProductDetailsById = (prodId, selectedVariantId = null) => {
         const prod = allProducts.find(p => p.id == prodId);
-        if (prod) openProductDetails(prod);
+        if (prod) openProductDetails(prod, selectedVariantId);
     };
 
-    window.openProductDetails = (prod) => {
+    window.openProductDetails = (prod, selectedVariantId = null) => {
         activeDetailProduct = prod;
-        const isAvailable = (prod.available_stock !== undefined ? prod.available_stock : prod.total_stock) > 0;
-        const inCart = cartItems.some(item => (item.id || item) == prod.id);
+        const variants = getProductVariants(prod);
+        activeDetailVariant = selectedVariantId ? (variants.find(v => v.id === selectedVariantId) || variants[0]) : variants[0];
+
+        renderDetailModalData();
+        if (productDetailModal) productDetailModal.classList.add('active');
+    };
+
+    window.switchDetailVariant = (varId) => {
+        if (!activeDetailProduct) return;
+        const variants = getProductVariants(activeDetailProduct);
+        activeDetailVariant = variants.find(v => v.id === varId) || variants[0];
+        cardActiveVariantMap[activeDetailProduct.id] = activeDetailVariant.id;
+        renderDetailModalData();
+        renderProducts();
+    };
+
+    function renderDetailModalData() {
+        if (!activeDetailProduct) return;
+        const prod = activeDetailProduct;
+        const variants = getProductVariants(prod);
+        const v = activeDetailVariant || variants[0];
+        const isMultiColor = variants.length > 1 || (variants.length === 1 && variants[0].color_name && variants[0].color_name !== 'Standard');
+
+        const isAvailable = (v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1)) > 0;
+        const cartItemId = `${prod.id}_${v.id}`;
+        const inCart = cartItems.some(item => (item.cart_item_id === cartItemId) || ((item.id || item) == prod.id && (!item.variant_id || item.variant_id === v.id)));
 
         if (detailCatBadge) detailCatBadge.textContent = prod.category || 'Rental Gear';
         if (detailModalTitle) detailModalTitle.textContent = prod.name;
-        if (detailPricePerDay) detailPricePerDay.textContent = prod.rent_price_per_day;
-        if (detailDepositAmount) detailDepositAmount.textContent = prod.deposit_amount || 0;
+        if (detailPricePerDay) detailPricePerDay.textContent = v.rent_price_per_day;
+        if (detailDepositAmount) detailDepositAmount.textContent = v.deposit_amount || 0;
         if (detailStockUnits) {
-            detailStockUnits.textContent = isAvailable ? `${prod.available_stock || 1} of ${prod.total_stock || prod.available_stock || 1} units available` : '0 units available';
+            const avail = v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1);
+            const total = v.total_stock || avail || 1;
+            detailStockUnits.textContent = isAvailable ? `${avail} of ${total} units available` : '0 units available';
         }
         if (detailDescriptionText) {
-            detailDescriptionText.textContent = prod.description && prod.description.trim() ? prod.description : 'High-quality professional rental gear. Carefully inspected, fully functional, and ready for immediate deployment.';
+            detailDescriptionText.textContent = v.specifications && v.specifications.trim() ? v.specifications : (prod.description && prod.description.trim() ? prod.description : 'High-quality professional rental gear. Carefully inspected, fully functional, and ready for immediate deployment.');
+        }
+
+        // Color Swatches in Detail Modal
+        const detailVariantsBox = document.getElementById('detailVariantsSelectorBox');
+        const detailVariantSwatches = document.getElementById('detailVariantSwatches');
+        if (detailVariantsBox && detailVariantSwatches) {
+            if (isMultiColor) {
+                detailVariantsBox.style.display = 'block';
+                detailVariantSwatches.innerHTML = variants.map(variant => {
+                    const isSelected = variant.id === v.id;
+                    const vAvail = (variant.available_stock !== undefined ? variant.available_stock : variant.total_stock) > 0;
+                    const dotColor = variant.color_code || '#111827';
+                    return `
+                        <button type="button" 
+                            class="detail-variant-pill ${isSelected ? 'active' : ''} ${!vAvail ? 'out-of-stock' : ''}" 
+                            onclick="switchDetailVariant('${variant.id}')"
+                            title="${variant.color_name} (${vAvail ? `${variant.available_stock || variant.total_stock} units in stock` : 'Out of stock'})">
+                            <span class="detail-variant-dot" style="background-color: ${dotColor};"></span>
+                            <span>${variant.color_name}</span>
+                        </button>
+                    `;
+                }).join('');
+            } else {
+                detailVariantsBox.style.display = 'none';
+            }
         }
 
         // Stock Status Badge
         if (detailStockBadgeContainer) {
+            const avail = v.available_stock !== undefined ? v.available_stock : (v.total_stock || 1);
             if (isAvailable) {
                 detailStockBadgeContainer.innerHTML = `
                     <span class="status-badge-lg in-stock">
-                        <span>🟢</span> In Stock &amp; Available (${prod.available_stock || 1} units in stock)
+                        <span>🟢</span> In Stock &amp; Available (${avail} unit${avail === 1 ? '' : 's'} in stock)
                     </span>
                 `;
             } else {
                 detailStockBadgeContainer.innerHTML = `
                     <span class="status-badge-lg out-of-stock">
-                        <span>🔴</span> Out of Stock (Currently Rented Out)
+                        <span>🔴</span> Out of Stock (${v.color_name !== 'Standard' ? v.color_name : 'Item'} Currently Rented Out)
                     </span>
                 `;
             }
         }
 
-        // Action Buttons: Toggle Add to Cart / Remove from Cart
+        // Action Buttons
         if (detailActionButtons) {
             if (!isAvailable) {
                 detailActionButtons.innerHTML = `
@@ -373,17 +518,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Media Gallery
-        detailMediaList = Array.isArray(prod.media) && prod.media.length > 0 
-            ? prod.media 
-            : [{ type: 'image', url: prod.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' }];
+        // Media Gallery for selected variant
+        detailMediaList = (Array.isArray(v.media) && v.media.length > 0)
+            ? v.media
+            : (Array.isArray(prod.media) && prod.media.length > 0 ? prod.media : [{ type: 'image', url: prod.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' }]);
 
         currentDetailMediaIdx = 0;
         renderDetailThumbnails();
         showDetailMedia(0);
-
-        if (productDetailModal) productDetailModal.classList.add('active');
-    };
+    }
 
     window.closeProductDetailModal = () => {
         if (detailMainVideo) {
@@ -475,64 +618,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addToCartFromDetail = () => {
         if (activeDetailProduct) {
-            addToCart(activeDetailProduct);
-            openProductDetails(activeDetailProduct);
+            addToCart(activeDetailProduct, activeDetailVariant);
+            renderDetailModalData();
         }
     };
 
     window.removeFromCartFromDetail = () => {
         if (activeDetailProduct) {
-            removeSingleCartItem(activeDetailProduct.id);
-            openProductDetails(activeDetailProduct);
+            const cartItemId = `${activeDetailProduct.id}_${activeDetailVariant ? activeDetailVariant.id : 'std'}`;
+            removeSingleCartItem(cartItemId);
+            renderDetailModalData();
         }
     };
 
     window.rentNowFromDetail = () => {
         if (activeDetailProduct) {
             closeProductDetailModal();
-            openBookingModal(activeDetailProduct);
+            openBookingModal(activeDetailProduct, activeDetailVariant ? activeDetailVariant.id : null);
         }
     };
 
     // =======================================================
-    // 5. Direct Product Booking Modal Logic
+    // 5. Direct Product Booking Modal Logic (Variant Aware)
     // =======================================================
-    window.openBookingModalById = (prodId) => {
+    let activeBookingVariant = null;
+
+    window.openBookingModalById = (prodId, selectedVariantId = null) => {
         const prod = allProducts.find(p => p.id == prodId);
-        if (prod) openBookingModal(prod);
+        if (prod) openBookingModal(prod, selectedVariantId);
     };
 
-    window.initBooking = (prod) => {
-        openBookingModal(prod);
+    window.initBooking = (prod, selectedVariantId = null) => {
+        openBookingModal(prod, selectedVariantId);
     };
 
-    function openBookingModal(prod) {
-        const isAvailable = (prod.available_stock !== undefined ? prod.available_stock : prod.total_stock) > 0;
-        if (!isAvailable) {
-            showStoreToast(`${prod.name} is currently Out of Stock! 🔴`, 'error');
-            return;
-        }
-        activeProductForBooking = prod;
-        if (bookingProductId) bookingProductId.value = prod.id;
-        
-        const modalProdName = document.getElementById('modalProductName');
+    window.switchBookingVariant = (varId) => {
+        if (!activeProductForBooking) return;
+        const variants = getProductVariants(activeProductForBooking);
+        activeBookingVariant = variants.find(v => v.id === varId) || variants[0];
+        cardActiveVariantMap[activeProductForBooking.id] = activeBookingVariant.id;
+        renderBookingModalVariantData();
+    };
+
+    function renderBookingModalVariantData() {
+        if (!activeProductForBooking) return;
+        const prod = activeProductForBooking;
+        const variants = getProductVariants(prod);
+        const v = activeBookingVariant || variants[0];
+        const isMultiColor = variants.length > 1 || (variants.length === 1 && variants[0].color_name && variants[0].color_name !== 'Standard');
+
+        const bookingVariantId = document.getElementById('bookingVariantId');
+        const bookingVariantColor = document.getElementById('bookingVariantColor');
+        const bookingVariantColorCode = document.getElementById('bookingVariantColorCode');
+
+        if (bookingVariantId) bookingVariantId.value = v.id;
+        if (bookingVariantColor) bookingVariantColor.value = v.color_name;
+        if (bookingVariantColorCode) bookingVariantColorCode.value = v.color_code;
+
         const modalProdPrice = document.getElementById('modalProductPrice');
         const modalProdDeposit = document.getElementById('modalProductDeposit');
-        const modalProdCat = document.getElementById('modalProductCategory');
+        if (modalProdPrice) modalProdPrice.textContent = v.rent_price_per_day;
+        if (modalProdDeposit) modalProdDeposit.textContent = v.deposit_amount || 0;
+
+        // Color Swatches in Booking Modal
+        const bookingVarBox = document.getElementById('bookingVariantSelectorBox');
+        const bookingVarSwatches = document.getElementById('bookingVariantSwatches');
+        if (bookingVarBox && bookingVarSwatches) {
+            if (isMultiColor) {
+                bookingVarBox.style.display = 'block';
+                bookingVarSwatches.innerHTML = variants.map(variant => {
+                    const isSelected = variant.id === v.id;
+                    const vAvail = (variant.available_stock !== undefined ? variant.available_stock : variant.total_stock) > 0;
+                    const dotColor = variant.color_code || '#111827';
+                    return `
+                        <button type="button" 
+                            class="booking-variant-pill ${isSelected ? 'active' : ''} ${!vAvail ? 'out-of-stock' : ''}" 
+                            onclick="switchBookingVariant('${variant.id}')"
+                            title="${variant.color_name} (${vAvail ? `${variant.available_stock || variant.total_stock} in stock` : 'Out of stock'})">
+                            <span class="booking-variant-dot" style="background-color: ${dotColor};"></span>
+                            <span>${variant.color_name}</span>
+                        </button>
+                    `;
+                }).join('');
+            } else {
+                bookingVarBox.style.display = 'none';
+            }
+        }
+
+        // Multi-media gallery for selected variant
+        const mediaList = (Array.isArray(v.media) && v.media.length > 0)
+            ? v.media
+            : (Array.isArray(prod.media) && prod.media.length > 0 ? prod.media : [{ type: 'image', url: prod.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' }]);
+
         const modalProdImg = document.getElementById('modalProductImg');
         const modalVideoWrapper = document.getElementById('modalVideoWrapper');
         const modalProdVideo = document.getElementById('modalProductVideo');
         const modalMediaThumbStrip = document.getElementById('modalMediaThumbStrip');
-
-        if (modalProdName) modalProdName.textContent = prod.name;
-        if (modalProdCat) modalProdCat.textContent = prod.category || 'General';
-        if (modalProdPrice) modalProdPrice.textContent = prod.rent_price_per_day;
-        if (modalProdDeposit) modalProdDeposit.textContent = prod.deposit_amount || 0;
-
-        // Multi-media gallery setup
-        const mediaList = Array.isArray(prod.media) && prod.media.length > 0 
-            ? prod.media 
-            : [{ type: 'image', url: prod.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' }];
 
         function showMedia(index) {
             const item = mediaList[index];
@@ -559,16 +740,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Update active thumbnail
             if (modalMediaThumbStrip) {
                 const buttons = modalMediaThumbStrip.querySelectorAll('.store-modal-thumb-btn');
-                buttons.forEach((b, i) => {
-                    b.classList.toggle('active', i === index);
-                });
+                buttons.forEach((b, i) => b.classList.toggle('active', i === index));
             }
         }
 
-        // Render thumbnails if multiple media
         if (modalMediaThumbStrip) {
             if (mediaList.length > 1) {
                 modalMediaThumbStrip.style.display = 'flex';
@@ -589,9 +766,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         window.switchModalMedia = (idx) => showMedia(idx);
-
-        // Show first media item by default
         showMedia(0);
+
+        calculatePriceBreakdown();
+    }
+
+    function openBookingModal(prod, selectedVariantId = null) {
+        const variants = getProductVariants(prod);
+        activeBookingVariant = selectedVariantId ? (variants.find(v => v.id === selectedVariantId) || variants[0]) : variants[0];
+
+        const isAvailable = (activeBookingVariant.available_stock !== undefined ? activeBookingVariant.available_stock : (activeBookingVariant.total_stock || 1)) > 0;
+        if (!isAvailable) {
+            showStoreToast(`${prod.name} (${activeBookingVariant.color_name}) is currently Out of Stock! 🔴`, 'error');
+            return;
+        }
+
+        activeProductForBooking = prod;
+        if (bookingProductId) bookingProductId.value = prod.id;
+        
+        const modalProdName = document.getElementById('modalProductName');
+        const modalProdCat = document.getElementById('modalProductCategory');
+        if (modalProdName) modalProdName.textContent = prod.name;
+        if (modalProdCat) modalProdCat.textContent = prod.category || 'General';
 
         // Default start date = today, end date = tomorrow
         const today = new Date();
@@ -607,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             custEndDate.min = today.toISOString().split('T')[0];
         }
 
-        calculatePriceBreakdown();
+        renderBookingModalVariantData();
 
         // Reset forms
         if (customerBookingForm) customerBookingForm.style.display = 'block';
@@ -633,8 +829,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (diffDays <= 0) diffDays = 1;
         }
 
-        const pricePerDay = parseFloat(activeProductForBooking.rent_price_per_day) || 0;
-        const deposit = parseFloat(activeProductForBooking.deposit_amount) || 0;
+        const v = activeBookingVariant || activeProductForBooking;
+        const pricePerDay = parseFloat(v.rent_price_per_day) || 0;
+        const deposit = parseFloat(v.deposit_amount) || 0;
         const rentalAmount = diffDays * pricePerDay;
         const totalPayable = rentalAmount + deposit;
 
@@ -686,6 +883,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const bookingData = {
                 product_id: parseInt(bookingProductId.value),
+                variant_id: document.getElementById('bookingVariantId') ? document.getElementById('bookingVariantId').value : (activeBookingVariant ? activeBookingVariant.id : null),
+                variant_color: document.getElementById('bookingVariantColor') ? document.getElementById('bookingVariantColor').value : (activeBookingVariant ? activeBookingVariant.color_name : null),
+                variant_color_code: document.getElementById('bookingVariantColorCode') ? document.getElementById('bookingVariantColorCode').value : (activeBookingVariant ? activeBookingVariant.color_code : null),
                 customer_name: document.getElementById('custName').value.trim(),
                 customer_phone: document.getElementById('custPhone').value.trim(),
                 customer_address: document.getElementById('custAddress').value.trim(),
@@ -707,8 +907,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     customerBookingForm.style.display = 'none';
                     bookingSuccessBox.style.display = 'block';
 
+                    const colorSuffix = result.order.variant_color && result.order.variant_color !== 'Standard' ? ` (${result.order.variant_color})` : '';
                     document.getElementById('successOrderId').textContent = `#${result.order.id}`;
-                    document.getElementById('successCustName').textContent = `${result.order.customer_name} (📞 ${result.order.customer_phone})`;
+                    document.getElementById('successCustName').textContent = `${result.order.customer_name} (📞 ${result.order.customer_phone})${colorSuffix}`;
                     document.getElementById('successDates').textContent = `${result.order.start_date} → ${result.order.end_date} (${result.order.total_days} days)`;
                     document.getElementById('successAmount').textContent = `₹${result.order.total_amount} (Deposit: ₹${result.order.deposit_amount})`;
                 } else {
@@ -733,7 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     // 6. RENTAL CART LOGIC & INDIVIDUAL REMOVE OPTIONS
     // =======================================================
-    let pendingRemovalProductId = null;
+    let pendingRemovalCartItemId = null;
     const removeConfirmModal = document.getElementById('removeConfirmModal');
     const confirmRemoveProdName = document.getElementById('confirmRemoveProdName');
 
@@ -758,45 +959,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.addToCartById = (productId) => {
+    window.addToCartById = (productId, variantId = null) => {
         const product = allProducts.find(p => p.id == productId);
-        if (product) addToCart(product);
+        if (product) {
+            const variants = getProductVariants(product);
+            const variant = variantId ? (variants.find(v => v.id === variantId) || variants[0]) : variants[0];
+            addToCart(product, variant);
+        }
     };
 
-    window.addToCart = (product) => {
-        const available = (product.available_stock !== undefined ? product.available_stock : product.total_stock);
+    window.addToCart = (product, variant = null) => {
+        const variants = getProductVariants(product);
+        const activeV = variant || (activeDetailVariant ? activeDetailVariant : variants[0]);
+        const available = activeV ? (activeV.available_stock !== undefined ? activeV.available_stock : activeV.total_stock) : (product.available_stock !== undefined ? product.available_stock : product.total_stock);
+
         if (available <= 0) {
-            showStoreToast(`${product.name} is currently Out of Stock! 🔴`, 'error');
+            showStoreToast(`${product.name} (${activeV.color_name}) is currently Out of Stock! 🔴`, 'error');
             return;
         }
-        const existingIdx = cartItems.findIndex(item => (item.id || item) == product.id);
+
+        const cartItemId = `${product.id}_${activeV.id}`;
+        const existingIdx = cartItems.findIndex(item => item.cart_item_id === cartItemId || ((item.id || item) == product.id && (!item.variant_id || item.variant_id === activeV.id)));
+
         if (existingIdx > -1) {
             cartItems[existingIdx].days = (cartItems[existingIdx].days || 1) + 1;
-            showStoreToast(`Added +1 day for ${product.name}! 🛒`, 'success');
+            showStoreToast(`Added +1 day for ${product.name} (${activeV.color_name})! 🛒`, 'success');
         } else {
+            const vPrice = parseFloat(activeV.rent_price_per_day) || parseFloat(product.rent_price_per_day) || 0;
+            const vDeposit = activeV.deposit_amount !== undefined ? parseFloat(activeV.deposit_amount) : (parseFloat(product.deposit_amount) || 0);
+            const vImg = (activeV.media && activeV.media[0] ? activeV.media[0].url : product.image_url) || '';
+
             cartItems.push({
+                cart_item_id: cartItemId,
                 id: product.id,
+                variant_id: activeV.id,
+                variant_color: activeV.color_name,
+                variant_color_code: activeV.color_code,
                 name: product.name,
                 category: product.category,
-                rent_price_per_day: parseFloat(product.rent_price_per_day) || 0,
-                deposit_amount: parseFloat(product.deposit_amount) || 0,
-                image_url: product.image_url || (product.media && product.media[0] ? product.media[0].url : ''),
+                rent_price_per_day: vPrice,
+                deposit_amount: vDeposit,
+                image_url: vImg,
+                available_stock: available,
                 days: 1
             });
-            showStoreToast(`Added ${product.name} to Cart! 🛒`, 'success');
+            showStoreToast(`Added ${product.name} (${activeV.color_name}) to Cart! 🛒`, 'success');
         }
+
         localStorage.setItem('renthub_cart_items', JSON.stringify(cartItems));
         updateCartBadge();
         renderProducts();
         if (activeDetailProduct && activeDetailProduct.id == product.id) {
-            openProductDetails(activeDetailProduct);
+            renderDetailModalData();
         }
     };
 
     // INDIVIDUAL REMOVE CONFIRMATION POPUP SYSTEM
-    window.promptRemoveCartItem = (productId, productName) => {
-        pendingRemovalProductId = productId;
-        const item = cartItems.find(it => (it.id || it) == productId);
+    window.promptRemoveCartItem = (cartItemId, productName) => {
+        pendingRemovalCartItemId = cartItemId;
+        const item = cartItems.find(it => (it.cart_item_id || it.id) == cartItemId);
         const name = productName || (item ? item.name : 'this product');
         
         if (confirmRemoveProdName) {
@@ -806,13 +1027,13 @@ document.addEventListener('DOMContentLoaded', () => {
             removeConfirmModal.classList.add('active');
         } else {
             if (confirm(`Are you sure you want to remove "${name}" from your rental cart?`)) {
-                executeRemoveCartItem(productId);
+                executeRemoveCartItem(cartItemId);
             }
         }
     };
 
     window.cancelRemoveCartItem = () => {
-        pendingRemovalProductId = null;
+        pendingRemovalCartItemId = null;
         if (removeConfirmModal) {
             removeConfirmModal.classList.remove('active');
         }
@@ -825,48 +1046,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.confirmExecuteRemove = () => {
-        if (pendingRemovalProductId !== null && pendingRemovalProductId !== undefined) {
-            const idToRemove = pendingRemovalProductId;
+        if (pendingRemovalCartItemId !== null && pendingRemovalCartItemId !== undefined) {
+            const idToRemove = pendingRemovalCartItemId;
             cancelRemoveCartItem();
             executeRemoveCartItem(idToRemove);
         }
     };
 
-    window.removeSingleCartItem = (productId) => {
-        const item = cartItems.find(it => (it.id || it) == productId);
-        promptRemoveCartItem(productId, item ? item.name : '');
+    window.removeSingleCartItem = (cartItemId) => {
+        const item = cartItems.find(it => (it.cart_item_id || it.id) == cartItemId);
+        promptRemoveCartItem(cartItemId, item ? `${item.name}${item.variant_color && item.variant_color !== 'Standard' ? ` (${item.variant_color})` : ''}` : '');
     };
 
-    window.removeFromCart = (productId) => {
-        window.removeSingleCartItem(productId);
+    window.removeFromCart = (cartItemId) => {
+        window.removeSingleCartItem(cartItemId);
     };
 
     // Executes individual removal, keeping all other items untouched & recalculating all totals
-    function executeRemoveCartItem(productId) {
-        const itemIdx = cartItems.findIndex(item => (item.id || item) == productId);
+    function executeRemoveCartItem(cartItemId) {
+        const itemIdx = cartItems.findIndex(item => (item.cart_item_id || item.id) == cartItemId);
         if (itemIdx > -1) {
             const removedItem = cartItems[itemIdx];
             const name = removedItem.name || 'Product';
 
-            const cardRow = document.getElementById(`cart-item-row-${productId}`);
+            const cardRow = document.getElementById(`cart-item-row-${cartItemId}`) || document.getElementById(`cart-item-row-${removedItem.id}`);
             if (cardRow) {
                 cardRow.classList.add('is-removing');
             }
 
             setTimeout(() => {
-                // Remove ONLY the selected product
                 cartItems.splice(itemIdx, 1);
-
-                // Persist updated cart
                 localStorage.setItem('renthub_cart_items', JSON.stringify(cartItems));
 
-                // Auto recalculate & re-render everything
                 updateCartBadge();
                 renderProducts();
                 renderCartModal();
 
-                if (activeDetailProduct && activeDetailProduct.id == productId) {
-                    openProductDetails(activeDetailProduct);
+                if (activeDetailProduct && activeDetailProduct.id == removedItem.id) {
+                    renderDetailModalData();
                 }
                 showStoreToast(`Removed "${name}" from cart 🗑️`, 'info');
             }, cardRow ? 180 : 0);
@@ -874,8 +1091,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Stepper for individual product duration
-    window.updateCartDays = (productId, delta) => {
-        const idx = cartItems.findIndex(item => (item.id || item) == productId);
+    window.updateCartDays = (cartItemId, delta) => {
+        const idx = cartItems.findIndex(item => (item.cart_item_id || item.id) == cartItemId);
         if (idx > -1) {
             const curDays = cartItems[idx].days || 1;
             const newDays = curDays + delta;
@@ -906,16 +1123,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.viewProductFromCart = (productId) => {
+    window.viewProductFromCart = (productId, variantId = null) => {
         closeCartModal();
         const prod = allProducts.find(p => p.id == productId);
-        if (prod) openProductDetails(prod);
+        if (prod) {
+            let variant = null;
+            if (variantId) {
+                const vars = getProductVariants(prod);
+                variant = vars.find(v => v.id === variantId) || vars[0];
+            }
+            openProductDetails(prod, variant);
+        }
     };
 
-    window.openDirectBookingFromCart = (productId) => {
+    window.openDirectBookingFromCart = (productId, variantId = null) => {
         closeCartModal();
         const prod = allProducts.find(p => p.id == productId);
-        if (prod) openBookingModal(prod);
+        if (prod) {
+            let variant = null;
+            if (variantId) {
+                const vars = getProductVariants(prod);
+                variant = vars.find(v => v.id === variantId) || vars[0];
+            }
+            openBookingModal(prod, variant);
+        }
     };
 
     function renderCartModal() {
@@ -957,27 +1188,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
             const safeName = (item.name || 'Rental Item').replace(/'/g, "\\'");
+            const rowKey = item.cart_item_id || item.id;
+            const safeVariantId = item.variant_id ? `'${item.variant_id}'` : 'null';
 
             return `
-                <div class="fk-cart-item-card" id="cart-item-row-${item.id}">
+                <div class="fk-cart-item-card" id="cart-item-row-${rowKey}">
                     <!-- Main item row: image + stepper on left, details on right -->
                     <div class="fk-item-main-row">
                         <!-- Left: Image & Stepper -->
                         <div class="fk-item-left-box">
-                            <div class="fk-item-img-wrap" onclick="viewProductFromCart(${item.id})" style="cursor: pointer;" title="Click to view multi-angle angles">
+                            <div class="fk-item-img-wrap" onclick="viewProductFromCart(${item.id}, ${safeVariantId})" style="cursor: pointer;" title="Click to view details">
                                 <img src="${imgUrl}" alt="${item.name}" class="fk-item-img" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'">
                             </div>
                             <div class="fk-stepper-wrap">
-                                <button type="button" class="fk-stepper-btn" onclick="updateCartDays(${item.id}, -1)" title="Decrease 1 Day">−</button>
+                                <button type="button" class="fk-stepper-btn" onclick="updateCartDays('${rowKey}', -1)" title="Decrease 1 Day">−</button>
                                 <span class="fk-stepper-val">${days} ${days === 1 ? 'Day' : 'Days'}</span>
-                                <button type="button" class="fk-stepper-btn" onclick="updateCartDays(${item.id}, 1)" title="Increase 1 Day">+</button>
+                                <button type="button" class="fk-stepper-btn" onclick="updateCartDays('${rowKey}', 1)" title="Increase 1 Day">+</button>
                             </div>
                         </div>
 
                         <!-- Right: Details & Pricing -->
                         <div class="fk-item-details-box">
                             <div class="fk-item-header-row">
-                                <h4 class="fk-item-name" title="${item.name}" onclick="viewProductFromCart(${item.id})" style="cursor: pointer;">${item.name}</h4>
+                                <div>
+                                    <h4 class="fk-item-name" title="${item.name}" onclick="viewProductFromCart(${item.id}, ${safeVariantId})" style="cursor: pointer;">${item.name}</h4>
+                                    ${item.variant_color && item.variant_color !== 'Standard' ? `
+                                        <div style="margin-top: 4px;">
+                                            <span class="cart-variant-pill" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: #1e293b; background: #f1f5f9; padding: 2px 8px; border-radius: 999px; border: 1px solid #cbd5e1;">
+                                                <span class="color-chip-dot" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${item.variant_color_code || '#334155'}; display: inline-block;"></span>
+                                                ${item.variant_color}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                </div>
                                 <span class="fk-item-badge-pill">${item.category || 'Gear'}</span>
                             </div>
 
@@ -1013,15 +1256,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button type="button" class="fk-btn-secondary-action" onclick="showStoreToast('Item saved to your wishlist! 🔖', 'info')">
                                 <span>🔖 Save for later</span>
                             </button>
-                            <button type="button" class="fk-btn-remove" onclick="promptRemoveCartItem(${item.id}, '${safeName}')" title="Remove ${item.name} only from cart">
+                            <button type="button" class="fk-btn-remove" onclick="promptRemoveCartItem('${rowKey}', '${safeName}')" title="Remove this variant only from cart">
                                 <span>🗑️ REMOVE</span>
                             </button>
                         </div>
                         <div class="fk-actions-right" style="display: flex; align-items: center; gap: 8px;">
-                            <button type="button" class="fk-btn-secondary-action" onclick="viewProductFromCart(${item.id})" style="color: #0265fe; font-weight: 700;">
+                            <button type="button" class="fk-btn-secondary-action" onclick="viewProductFromCart(${item.id}, ${safeVariantId})" style="color: #0265fe; font-weight: 700;">
                                 <span>🔍 View Angles</span>
                             </button>
-                            <button type="button" class="fk-btn-rent-single" onclick="openDirectBookingFromCart(${item.id})">
+                            <button type="button" class="fk-btn-rent-single" onclick="openDirectBookingFromCart(${item.id}, ${safeVariantId})">
                                 <span>⚡ Rent This Now</span>
                             </button>
                         </div>
@@ -1178,6 +1421,9 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const item of cartItems) {
                 const bookingData = {
                     product_id: parseInt(item.id),
+                    variant_id: item.variant_id || null,
+                    variant_color: item.variant_color || null,
+                    variant_color_code: item.variant_color_code || null,
                     customer_name: name,
                     customer_phone: phone,
                     delivery_type: delivery,
@@ -1608,7 +1854,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <img src="${ord.product_image || 'assets/inventory_products.png'}" alt="${ord.product_name || 'Item'}" class="order-product-big-img">
                     <div class="order-product-info">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
-                            <div class="order-product-name">${ord.product_name || 'Rental Item'}</div>
+                            <div class="order-product-name" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span>${ord.product_name || 'Rental Item'}</span>
+                                ${ord.variant_color && ord.variant_color !== 'Standard' ? `
+                                    <span class="order-variant-pill" style="font-size: 11.5px; font-weight: 700; color: #1e293b; background: #f1f5f9; padding: 2px 8px; border-radius: 999px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 5px;">
+                                        <span class="color-chip-dot" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${ord.variant_color_code || '#334155'}; display: inline-block;"></span>
+                                        ${ord.variant_color}
+                                    </span>
+                                ` : ''}
+                            </div>
                             <span class="order-tag" style="background: #eff6ff; color: #0265fe; border-color: #bfdbfe; white-space: nowrap;">
                                 ${ord.product_category || 'Electronics & Gear'}
                             </span>
@@ -1830,7 +2084,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="orders-item-body">
                                 <img src="${ord.product_image || 'assets/inventory_products.png'}" alt="Product" class="orders-item-img">
                                 <div class="orders-item-details">
-                                    <div class="orders-item-title">${ord.product_name || 'Rental Item'}</div>
+                                    <div class="orders-item-title" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span>${ord.product_name || 'Rental Item'}</span>
+                                        ${ord.variant_color && ord.variant_color !== 'Standard' ? `
+                                            <span class="order-variant-pill" style="font-size: 11px; font-weight: 700; color: #1e293b; background: #f1f5f9; padding: 1px 7px; border-radius: 999px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span class="color-chip-dot" style="width: 7px; height: 7px; border-radius: 50%; background-color: ${ord.variant_color_code || '#334155'}; display: inline-block;"></span>
+                                                ${ord.variant_color}
+                                            </span>
+                                        ` : ''}
+                                    </div>
                                     <div class="orders-item-meta">
                                         <span>📅 ${ord.start_date} &rarr; ${ord.end_date} (${ord.total_days || 1} Days)</span>
                                         <span>🚚 ${ord.delivery_type || 'Store Pickup'}</span>

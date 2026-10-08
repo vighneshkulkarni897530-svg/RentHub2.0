@@ -143,6 +143,14 @@
             <!-- Rendered dynamically: In Stock or Out of Stock -->
           </div>
 
+          <!-- Product Available Colour Variants Selector -->
+          <div id="detailVariantsSelectorBox" class="detail-variants-selector-box" style="display: none;">
+            <label class="detail-variants-label">Select Colour:</label>
+            <div class="detail-variant-swatches" id="detailVariantSwatches">
+              <!-- Dynamically populated: [● Black] [○ Silver] [○ White] -->
+            </div>
+          </div>
+
           <!-- Pricing Card -->
           <div class="detail-pricing-card">
             <div>
@@ -203,9 +211,20 @@
         </div>
       </div>
 
+      <!-- Selected Product Colour Selector in Booking Modal -->
+      <div id="bookingVariantSelectorBox" class="booking-variant-selector-box" style="display: none;">
+        <label class="booking-variant-label">Selected Colour:</label>
+        <div class="booking-variant-swatches" id="bookingVariantSwatches">
+          <!-- Dynamically populated: [● Black] [○ Silver] [○ White] -->
+        </div>
+      </div>
+
       <!-- Customer Booking Form -->
       <form id="customerBookingForm">
         <input type="hidden" id="bookingProductId">
+        <input type="hidden" id="bookingVariantId">
+        <input type="hidden" id="bookingVariantColor">
+        <input type="hidden" id="bookingVariantColorCode">
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">

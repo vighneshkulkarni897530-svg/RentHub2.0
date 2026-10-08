@@ -90,6 +90,9 @@ exports.createCustomerBooking = async (req, res) => {
     try {
         const {
             product_id,
+            variant_id,
+            variant_color,
+            variant_color_code,
             customer_name,
             customer_phone,
             customer_email,
@@ -117,10 +120,29 @@ exports.createCustomerBooking = async (req, res) => {
             });
         }
 
-        if (product.available_stock <= 0) {
+        // Find specific variant if product has variants
+        let selectedVariant = null;
+        const variantsList = Array.isArray(product.variants) ? product.variants : [];
+        if (variantsList.length > 0) {
+            if (variant_id) {
+                selectedVariant = variantsList.find(v => v.id === variant_id);
+            }
+            if (!selectedVariant && variant_color) {
+                selectedVariant = variantsList.find(v => v.color_name && v.color_name.toLowerCase() === variant_color.toLowerCase());
+            }
+            if (!selectedVariant) {
+                selectedVariant = variantsList[0];
+            }
+        }
+
+        const variantStock = selectedVariant ? parseInt(selectedVariant.available_stock !== undefined ? selectedVariant.available_stock : selectedVariant.total_stock) : (product.available_stock !== undefined ? product.available_stock : product.total_stock);
+
+        if (variantStock <= 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Sorry, this item is currently out of stock.'
+                message: selectedVariant && selectedVariant.color_name !== 'Standard'
+                    ? `Sorry, colour variant [${selectedVariant.color_name}] is currently out of stock.`
+                    : 'Sorry, this item is currently out of stock.'
             });
         }
 
@@ -131,16 +153,31 @@ exports.createCustomerBooking = async (req, res) => {
         let total_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (total_days <= 0) total_days = 1;
 
-        const total_amount = total_days * parseFloat(product.rent_price_per_day);
-        const deposit_amount = parseFloat(product.deposit_amount) || 0;
+        const effectiveDailyRent = selectedVariant ? parseFloat(selectedVariant.rent_price_per_day) : parseFloat(product.rent_price_per_day);
+        const effectiveDeposit = selectedVariant && selectedVariant.deposit_amount !== undefined ? parseFloat(selectedVariant.deposit_amount) : (parseFloat(product.deposit_amount) || 0);
+
+        const total_amount = total_days * effectiveDailyRent;
+        const deposit_amount = effectiveDeposit;
+
+        const finalVariantId = selectedVariant ? selectedVariant.id : (variant_id || null);
+        const finalVariantColor = selectedVariant ? selectedVariant.color_name : (variant_color || null);
+        const finalVariantColorCode = selectedVariant ? selectedVariant.color_code : (variant_color_code || null);
+
+        let variantMedia = (selectedVariant && Array.isArray(selectedVariant.media) && selectedVariant.media.length > 0) ? selectedVariant.media : (Array.isArray(product.media) ? product.media : []);
+        let variantImg = product.image_url;
+        if (variantMedia.length > 0) {
+            const prim = variantMedia.find(m => m.is_primary) || variantMedia[0];
+            if (prim && prim.url) variantImg = prim.url;
+        }
 
         // Insert new order into rental_orders table
         const newOrder = await db.run(
             `INSERT INTO rental_orders (
                 shop_id, product_id, customer_name, customer_phone,
                 customer_address, start_date, end_date, total_days,
-                total_amount, deposit_amount, status, delivery_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
+                total_amount, deposit_amount, delivery_type,
+                variant_id, variant_color, variant_color_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 product.shop_id,
                 product.id,
@@ -152,7 +189,10 @@ exports.createCustomerBooking = async (req, res) => {
                 total_days,
                 total_amount,
                 deposit_amount,
-                delivery_type || 'Store Pickup'
+                delivery_type || 'Store Pickup',
+                finalVariantId,
+                finalVariantColor,
+                finalVariantColorCode
             ]
         );
 
@@ -162,7 +202,10 @@ exports.createCustomerBooking = async (req, res) => {
             order: {
                 id: newOrder.lastID,
                 product_name: product.name,
-                product_image: product.image_url,
+                product_image: variantImg,
+                variant_id: finalVariantId,
+                variant_color: finalVariantColor,
+                variant_color_code: finalVariantColorCode,
                 customer_name,
                 customer_phone,
                 total_days,

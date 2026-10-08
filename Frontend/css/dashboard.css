@@ -1760,7 +1760,7 @@ body {
 }
 
 .has-prefix {
-  padding-left: 32px !important;
+  padding-left: 36px !important;
 }
 
 /* Media Dropzone Modern */
@@ -2776,5 +2776,461 @@ select.form-control {
   backdrop-filter: blur(4px);
 }
 
+/* =======================================================
+   MULTIPLE COLOUR VARIANTS STYLING (MODAL & INVENTORY)
+   ======================================================= */
+.variant-colors-section {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  transition: all 0.25s ease;
+}
 
+.variant-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.variant-count-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0265fe;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid #bae6fd;
+}
+
+.variant-section-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 14px 0;
+  line-height: 1.4;
+}
+
+/* Variant Tabs Bar */
+.variant-tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.variant-color-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.variant-color-tab:hover {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+  transform: translateY(-1px);
+}
+
+.variant-color-tab.active {
+  border-color: #0265fe;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #0265fe;
+  box-shadow: 0 3px 10px rgba(2, 101, 254, 0.18);
+}
+
+.variant-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.variant-tab-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.variant-tab-summary {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+.variant-color-tab.active .variant-tab-summary {
+  color: #0369a1;
+}
+
+.btn-remove-variant-tab {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-left: 4px;
+}
+
+.btn-remove-variant-tab:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.btn-add-colour-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(2, 101, 254, 0.06);
+  border: 1.5px dashed #0265fe;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0265fe;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-colour-tab:hover {
+  background: rgba(2, 101, 254, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Add Colour Palette Popover Panel */
+.add-colour-panel {
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(2, 101, 254, 0.1);
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.add-colour-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.btn-close-colour-panel {
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-close-colour-panel:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.predefined-colors-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.predefined-color-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.predefined-color-pill:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0265fe;
+  transform: translateY(-1px);
+}
+
+.predefined-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.custom-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-color-picker {
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 2px;
+  cursor: pointer;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.custom-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.custom-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 7px;
+}
+
+.btn-add-custom-variant {
+  background: #0265fe;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0 16px;
+  height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-add-custom-variant:hover {
+  background: #0052d4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 101, 254, 0.25);
+}
+
+/* Active Variant Indicator Banner */
+.active-variant-badge-bar {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.active-variant-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.active-color-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.active-color-name {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.variant-sync-status {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0265fe;
+}
+
+/* Dashboard Inventory Product Card Variant Pills */
+.card-variants-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.card-variant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-pill);
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.card-variant-chip .color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+.order-variant-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(2, 101, 254, 0.1);
+  color: #0265fe;
+  border: 1px solid rgba(2, 101, 254, 0.2);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* Variant Pricing & Stock Summary Matrix */
+.variant-pricing-matrix-wrap {
+  margin-top: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.variant-matrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.variant-matrix-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.variant-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.variant-matrix-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.variant-matrix-table td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.variant-matrix-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-radius: 6px;
+}
+
+.variant-matrix-row:hover {
+  background: #f1f5f9;
+}
+
+.variant-matrix-row.active-row {
+  background: #eff6ff;
+}
+
+.variant-matrix-row.active-row td {
+  font-weight: 700;
+  color: #0265fe;
+}
+
+.matrix-active-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #0265fe;
+  background: #dbeafe;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.matrix-edit-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.matrix-edit-btn:hover {
+  background: #0265fe;
+  color: #ffffff;
+  border-color: #0265fe;
+}
 
