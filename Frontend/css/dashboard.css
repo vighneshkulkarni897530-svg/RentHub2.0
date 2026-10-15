@@ -2965,43 +2965,6 @@ select.form-control {
   color: #ef4444;
 }
 
-.predefined-colors-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.predefined-color-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius-pill);
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1e293b;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.predefined-color-pill:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #0265fe;
-  transform: translateY(-1px);
-}
-
-.predefined-color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  flex-shrink: 0;
-}
-
 .custom-color-row {
   display: flex;
   align-items: center;
@@ -3047,6 +3010,33 @@ select.form-control {
   background: #0052d4;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(2, 101, 254, 0.25);
+}
+
+.detected-color-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  background: #f8fafc;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  margin-top: 8px;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+.detected-color-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 /* Active Variant Indicator Banner */

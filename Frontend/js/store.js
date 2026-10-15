@@ -5,7 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const API_BASE = (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http'))
         ? `${window.location.origin}/api/public`
-        : 'http://localhost:7000/api/public';
+        : 'http://localhost:5000/api/public';
     
     // Get shopId from URL query param (?shop=1 or default 1)
     const urlParams = new URLSearchParams(window.location.search);
@@ -771,7 +771,77 @@ document.addEventListener('DOMContentLoaded', () => {
         calculatePriceBreakdown();
     }
 
+    window.isCustomerLoggedIn = function() {
+        const token = localStorage.getItem('renthub_customer_token');
+        const userDataStr = localStorage.getItem('renthub_customer_data');
+        return !!(token && userDataStr);
+    };
+    const isCustomerLoggedIn = window.isCustomerLoggedIn;
+
+    window.getLoggedInCustomer = function() {
+        try {
+            return JSON.parse(localStorage.getItem('renthub_customer_data') || 'null');
+        } catch (e) {
+            return null;
+        }
+    };
+    const getLoggedInCustomer = window.getLoggedInCustomer;
+
+    let pendingRentalProduct = null;
+    let pendingRentalVariantId = null;
+    let wasCartOpenBeforeLogin = false;
+
+    window.promptCustomerLogin = function(contextMessage, prod = null, variantId = null) {
+        if (prod) {
+            pendingRentalProduct = prod;
+            pendingRentalVariantId = variantId;
+        }
+
+        // If cart modal is currently open, temporarily close it so account modal is cleanly displayed
+        if (cartModal && cartModal.classList.contains('active')) {
+            wasCartOpenBeforeLogin = true;
+            cartModal.classList.remove('active');
+        }
+
+        if (productDetailModal && productDetailModal.classList.contains('active')) {
+            productDetailModal.classList.remove('active');
+        }
+
+        showStoreToast('Please sign in to your customer account to rent items. 🔐', 'info');
+
+        switchAccountTab('userLogin');
+
+        const banner = document.querySelector('.account-welcome-banner');
+        if (banner) {
+            banner.innerHTML = `
+                <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 18px;">🔐</span>
+                        <h4 style="font-size: 14.5px; font-weight: 800; color: #1e40af; margin: 0;">Account Login Required to Rent</h4>
+                    </div>
+                    <p style="font-size: 12.5px; color: #3b82f6; margin: 0; line-height: 1.4;">
+                        ${contextMessage || 'You must be logged into your customer account before renting items. Please sign in or create an account.'}
+                    </p>
+                </div>
+            `;
+        }
+
+        if (accountModal) {
+            accountModal.style.zIndex = '2000';
+            accountModal.classList.add('active');
+        } else {
+            window.location.href = `user-login.html?shop=${shopId}`;
+        }
+    };
+    const promptCustomerLogin = window.promptCustomerLogin;
+
     function openBookingModal(prod, selectedVariantId = null) {
+        // Enforce customer login requirement to rent
+        if (!isCustomerLoggedIn()) {
+            promptCustomerLogin(`Please log in or create an account to rent "${prod.name}".`, prod, selectedVariantId);
+            return;
+        }
+
         const variants = getProductVariants(prod);
         activeBookingVariant = selectedVariantId ? (variants.find(v => v.id === selectedVariantId) || variants[0]) : variants[0];
 
@@ -788,6 +858,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalProdCat = document.getElementById('modalProductCategory');
         if (modalProdName) modalProdName.textContent = prod.name;
         if (modalProdCat) modalProdCat.textContent = prod.category || 'General';
+
+        // Pre-fill logged-in customer credentials
+        const loggedUser = getLoggedInCustomer();
+        if (loggedUser) {
+            const custNameInp = document.getElementById('custName');
+            const custPhoneInp = document.getElementById('custPhone');
+            const custAddressInp = document.getElementById('custAddress');
+            if (custNameInp && loggedUser.name) custNameInp.value = loggedUser.name;
+            if (custPhoneInp && loggedUser.phone) custPhoneInp.value = loggedUser.phone;
+            if (custAddressInp && loggedUser.address) custAddressInp.value = `${loggedUser.address || ''}${loggedUser.city ? ', ' + loggedUser.city : ''}`;
+        }
 
         // Default start date = today, end date = tomorrow
         const today = new Date();
@@ -894,14 +975,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 end_date: custEndDate.value
             };
 
+            if (!isCustomerLoggedIn()) {
+                submitBookingBtn.disabled = false;
+                submitBookingBtn.innerHTML = `<span>Confirm &amp; Book Rental &rarr;</span>`;
+                bookingModal.classList.remove('active');
+                promptCustomerLogin('Please log in to your customer account to complete your rental booking.');
+                return;
+            }
+
+            const custToken = localStorage.getItem('renthub_customer_token');
+            const reqHeaders = { 'Content-Type': 'application/json' };
+            if (custToken) reqHeaders['Authorization'] = `Bearer ${custToken}`;
+
             try {
                 const res = await fetch(`${API_BASE}/book`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: reqHeaders,
                     body: JSON.stringify(bookingData)
                 });
 
                 const result = await res.json();
+
+                if (result.requireLogin) {
+                    bookingModal.classList.remove('active');
+                    promptCustomerLogin(result.message || 'Please log in to your account.');
+                    submitBookingBtn.disabled = false;
+                    submitBookingBtn.innerHTML = `<span>Confirm &amp; Book Rental &rarr;</span>`;
+                    return;
+                }
 
                 if (result.success && result.order) {
                     customerBookingForm.style.display = 'none';
@@ -1352,47 +1453,60 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Customer Quick Booking Form Card -->
-                    <form id="cartCheckoutForm" class="fk-checkout-card" onsubmit="submitCartCheckout(event)">
-                        <div class="fk-checkout-header">
-                            <span>📋 Customer Contact &amp; Rental Dates</span>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div class="form-group" style="margin: 0;">
-                                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Full Name *</label>
-                                <input type="text" id="cartCustName" class="form-control" style="height: 36px; font-size: 13px;" placeholder="e.g. Rahul Sharma" value="${(() => { try { const u = JSON.parse(localStorage.getItem('renthub_customer_data') || '{}'); return u.name || ''; } catch(e){ return ''; } })()}" required>
+                    ${isCustomerLoggedIn() ? `
+                        <!-- Customer Quick Booking Form Card -->
+                        <form id="cartCheckoutForm" class="fk-checkout-card" onsubmit="submitCartCheckout(event)">
+                            <div class="fk-checkout-header">
+                                <span>📋 Customer Contact &amp; Rental Dates</span>
                             </div>
-
-                            <div class="form-group" style="margin: 0;">
-                                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Phone Number *</label>
-                                <input type="tel" id="cartCustPhone" class="form-control" style="height: 36px; font-size: 13px;" placeholder="9876543210" value="${(() => { try { const u = JSON.parse(localStorage.getItem('renthub_customer_data') || '{}'); return u.phone || ''; } catch(e){ return ''; } })()}" required>
-                            </div>
-
-                            <div class="form-group" style="margin: 0;">
-                                <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Fulfillment Preference</label>
-                                <select id="cartDeliveryType" class="form-control" style="height: 36px; font-size: 13px;">
-                                    <option value="Store Pickup">🏬 Self Store Pickup</option>
-                                    <option value="Home Delivery">🚚 Doorstep Delivery</option>
-                                </select>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
                                 <div class="form-group" style="margin: 0;">
-                                    <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Start Date *</label>
-                                    <input type="date" id="cartStartDate" class="form-control" style="height: 36px; font-size: 12.5px;" value="${today}" min="${today}" required>
+                                    <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Full Name *</label>
+                                    <input type="text" id="cartCustName" class="form-control" style="height: 36px; font-size: 13px;" placeholder="e.g. Rahul Sharma" value="${(() => { try { const u = JSON.parse(localStorage.getItem('renthub_customer_data') || '{}'); return u.name || ''; } catch(e){ return ''; } })()}" required>
                                 </div>
-                                <div class="form-group" style="margin: 0;">
-                                    <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">End Date *</label>
-                                    <input type="date" id="cartEndDate" class="form-control" style="height: 36px; font-size: 12.5px;" value="${tomorrow}" min="${today}" required>
-                                </div>
-                            </div>
 
-                            <button type="submit" class="fk-btn-place-order" id="cartSubmitBtn">
-                                <span>⚡ PLACE RENTAL ORDER (${cartItems.length}) &rarr;</span>
+                                <div class="form-group" style="margin: 0;">
+                                    <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Phone Number *</label>
+                                    <input type="tel" id="cartCustPhone" class="form-control" style="height: 36px; font-size: 13px;" placeholder="9876543210" value="${(() => { try { const u = JSON.parse(localStorage.getItem('renthub_customer_data') || '{}'); return u.phone || ''; } catch(e){ return ''; } })()}" required>
+                                </div>
+
+                                <div class="form-group" style="margin: 0;">
+                                    <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Fulfillment Preference</label>
+                                    <select id="cartDeliveryType" class="form-control" style="height: 36px; font-size: 13px;">
+                                        <option value="Store Pickup">🏬 Self Store Pickup</option>
+                                        <option value="Home Delivery">🚚 Doorstep Delivery</option>
+                                    </select>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Start Date *</label>
+                                        <input type="date" id="cartStartDate" class="form-control" style="height: 36px; font-size: 12.5px;" value="${today}" min="${today}" required>
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label class="form-label" style="font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">End Date *</label>
+                                        <input type="date" id="cartEndDate" class="form-control" style="height: 36px; font-size: 12.5px;" value="${tomorrow}" min="${today}" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="fk-btn-place-order" id="cartSubmitBtn">
+                                    <span>⚡ PLACE RENTAL ORDER (${cartItems.length}) &rarr;</span>
+                                </button>
+                            </div>
+                        </form>
+                    ` : `
+                        <div class="fk-checkout-card" style="text-align: center; padding: 22px 18px; border: 1.5px dashed #93c5fd; background: #f0f7ff; border-radius: 14px;">
+                            <div style="width: 52px; height: 52px; border-radius: 50%; background: #dbeafe; display: inline-flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 12px auto;">🔐</div>
+                            <h4 style="font-size: 16px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px;">Sign In Required to Rent</h4>
+                            <p style="font-size: 13px; color: #475569; margin-bottom: 18px; line-height: 1.5;">
+                                You must be logged into your customer account to place rental orders, protect security deposits, and receive store approvals.
+                            </p>
+                            <button type="button" class="fk-btn-place-order" onclick="promptCustomerLogin('Please log in or create an account to place this rental order.');" style="justify-content: center; width: 100%;">
+                                <span>🔐 Sign In / Create Account to Rent &rarr;</span>
                             </button>
                         </div>
-                    </form>
+                    `}
 
                 </div>
 
@@ -1403,6 +1517,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.submitCartCheckout = async (e) => {
         e.preventDefault();
         if (cartItems.length === 0) return;
+
+        if (!isCustomerLoggedIn()) {
+            showStoreToast('Please log in to your customer account before renting items. 🔐', 'error');
+            promptCustomerLogin('Please log in or create an account to complete your rental order.');
+            return;
+        }
 
         const cartSubmitBtn = document.getElementById('cartSubmitBtn');
         if (cartSubmitBtn) {
@@ -1415,6 +1535,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const delivery = document.getElementById('cartDeliveryType').value;
         const startDate = document.getElementById('cartStartDate').value;
         const endDate = document.getElementById('cartEndDate').value;
+
+        const custToken = localStorage.getItem('renthub_customer_token');
+        const reqHeaders = { 'Content-Type': 'application/json' };
+        if (custToken) reqHeaders['Authorization'] = `Bearer ${custToken}`;
 
         try {
             let placedCount = 0;
@@ -1433,10 +1557,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const res = await fetch(`${API_BASE}/book`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: reqHeaders,
                     body: JSON.stringify(bookingData)
                 });
                 const data = await res.json();
+                if (data.requireLogin) {
+                    showStoreToast(data.message || 'Session expired. Please log in again.', 'error');
+                    promptCustomerLogin(data.message);
+                    if (cartSubmitBtn) {
+                        cartSubmitBtn.disabled = false;
+                        cartSubmitBtn.innerHTML = `<span>⚡ PLACE RENTAL ORDER (${cartItems.length}) &rarr;</span>`;
+                    }
+                    return;
+                }
                 if (data.success) placedCount++;
             }
 
@@ -1536,12 +1669,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (accountLoggedOutView) accountLoggedOutView.style.display = 'block';
     }
 
-    window.openAccountModal = () => {
-        window.location.href = 'user-login.html';
+    window.openAccountModal = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        checkAccountAuthState();
+        if (accountModal) {
+            accountModal.classList.add('active');
+        } else {
+            window.location.href = 'user-login.html';
+        }
     };
+
+    if (openAccountBtn) {
+        openAccountBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.openAccountModal(e);
+        });
+    }
 
     window.closeAccountModal = () => {
         if (accountModal) accountModal.classList.remove('active');
+        if (wasCartOpenBeforeLogin) {
+            wasCartOpenBeforeLogin = false;
+            if (cartModal) {
+                cartModal.classList.add('active');
+                renderCartModal();
+            }
+        }
     };
 
     if (accountModal) {
@@ -1578,6 +1731,51 @@ document.addEventListener('DOMContentLoaded', () => {
         showStoreToast('Demo customer credentials filled! ⚡', 'info');
     };
 
+    function onCustomerAuthSuccess(user) {
+        checkAccountAuthState();
+
+        const shouldReopenCart = wasCartOpenBeforeLogin;
+        wasCartOpenBeforeLogin = false;
+
+        // Close account modal
+        if (typeof closeAccountModal === 'function') {
+            closeAccountModal();
+        }
+
+        // Pre-fill checkout form if open
+        const nameInp = document.getElementById('cartCustName');
+        const phoneInp = document.getElementById('cartCustPhone');
+        if (nameInp && user.name) nameInp.value = user.name;
+        if (phoneInp && user.phone) phoneInp.value = user.phone;
+
+        // If user was trying to rent an item directly, resume booking modal automatically
+        if (pendingRentalProduct) {
+            const prod = pendingRentalProduct;
+            const varId = pendingRentalVariantId;
+            pendingRentalProduct = null;
+            pendingRentalVariantId = null;
+            setTimeout(() => {
+                showStoreToast(`Resuming rental for ${prod.name} ⚡`, 'info');
+                openBookingModal(prod, varId);
+            }, 350);
+            return;
+        }
+
+        // If user opened login from the cart, re-open the cart with checkout form unlocked
+        if (shouldReopenCart) {
+            setTimeout(() => {
+                if (typeof openCartModal === 'function') {
+                    openCartModal();
+                } else if (cartModal) {
+                    cartModal.classList.add('active');
+                    renderCartModal();
+                }
+            }, 300);
+        } else if (cartModal && cartModal.classList.contains('active')) {
+            renderCartModal();
+        }
+    }
+
     window.handleCustomerLoginSubmit = async (e) => {
         e.preventDefault();
         const identifier = document.getElementById('accCustLoginId').value.trim();
@@ -1610,16 +1808,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.success && res.user) {
                 localStorage.setItem('renthub_customer_token', res.token || 'demo_customer_token');
                 localStorage.setItem('renthub_customer_data', JSON.stringify(res.user));
-                checkAccountAuthState();
-                
-                // Pre-fill checkout form if open
-                const nameInp = document.getElementById('cartCustName');
-                const phoneInp = document.getElementById('cartCustPhone');
-                if (nameInp && res.user.name) nameInp.value = res.user.name;
-                if (phoneInp && res.user.phone) phoneInp.value = res.user.phone;
-
                 showStoreToast(`Welcome, ${res.user.name}! 🎉`, 'success');
-                setTimeout(() => { if (typeof closeAccountModal === 'function') closeAccountModal(); }, 500);
+                onCustomerAuthSuccess(res.user);
             } else {
                 showStoreToast(res.message || 'Login failed. Please check credentials.', 'error');
             }
@@ -1638,9 +1828,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('renthub_customer_token', 'demo_user_token_123');
                 localStorage.setItem('renthub_customer_data', JSON.stringify(demoUser));
-                checkAccountAuthState();
                 showStoreToast('Logged in as Rahul Sharma! 🎉', 'success');
-                setTimeout(() => { if (typeof closeAccountModal === 'function') closeAccountModal(); }, 500);
+                onCustomerAuthSuccess(demoUser);
             } else {
                 showStoreToast('Login error. Please try again.', 'error');
             }
@@ -1685,15 +1874,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.user) {
                 localStorage.setItem('renthub_customer_token', data.token || 'user_token_new');
                 localStorage.setItem('renthub_customer_data', JSON.stringify(data.user));
-                checkAccountAuthState();
-                
-                const nameInp = document.getElementById('cartCustName');
-                const phoneInp = document.getElementById('cartCustPhone');
-                if (nameInp && data.user.name) nameInp.value = data.user.name;
-                if (phoneInp && data.user.phone) phoneInp.value = data.user.phone;
-
                 showStoreToast(`Welcome to Rent Hub, ${name}! 🎉`, 'success');
-                setTimeout(() => { if (typeof closeAccountModal === 'function') closeAccountModal(); }, 500);
+                onCustomerAuthSuccess(data.user);
             } else {
                 showStoreToast(data.message || 'Registration failed.', 'error');
             }
@@ -1711,7 +1893,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.handleCustomerLogout = () => {
         localStorage.removeItem('renthub_customer_token');
         localStorage.removeItem('renthub_customer_data');
+        pendingRentalProduct = null;
+        pendingRentalVariantId = null;
         checkAccountAuthState();
+        if (cartModal && cartModal.classList.contains('active')) {
+            renderCartModal();
+        }
         showStoreToast('Signed out of Customer Account successfully! 🚪', 'info');
     };
 

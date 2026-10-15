@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <img src="${o.product_image}" style="width: 36px; height: 36px; border-radius: 6px; object-fit: cover;">
                             <div>
-                                <div style="font-weight: 700; color: #fff;">
+                                <div style="font-weight: 700; color: #0f172a;">
                                     ${o.product_name}
                                     ${o.variant_color ? `
                                         <div class="order-variant-pill">
@@ -507,21 +507,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         </div>
                                     ` : ''}
                                 </div>
-                                <div style="font-size: 11px; color: #94a3b8;">${o.product_category}</div>
+                                <div style="font-size: 11px; color: #64748b;">${o.product_category}</div>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <div style="font-weight: 600; color: #fff;">${o.customer_name}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">📞 ${o.customer_phone}</div>
+                        <div style="font-weight: 600; color: #0f172a;">${o.customer_name}</div>
+                        <div style="font-size: 11px; color: #64748b;">📞 ${o.customer_phone}</div>
                     </td>
                     <td>
-                        <div>${o.start_date} → ${o.end_date}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">${o.total_days} days (${o.delivery_type})</div>
+                        <div style="font-weight: 600; color: #0f172a; white-space: nowrap;">${o.start_date || '—'}</div>
                     </td>
                     <td>
-                        <div style="font-weight: 800; color: #ffd166;">₹${o.total_amount}</div>
-                        <div style="font-size: 11px; color: #34d399;">Deposit: ₹${o.deposit_amount}</div>
+                        <div style="font-weight: 600; color: #0f172a; white-space: nowrap;">${o.end_date || '—'}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: #0265fe; white-space: nowrap;">${o.total_days} ${o.total_days === 1 ? 'day' : 'days'}</div>
+                        ${o.delivery_type ? `<div style="font-size: 11px; color: #64748b;">${o.delivery_type}</div>` : ''}
+                    </td>
+                    <td>
+                        <div style="font-weight: 800; color: #d97706;">₹${o.total_amount}</div>
+                        <div style="font-size: 11px; color: #059669;">Deposit: ₹${o.deposit_amount}</div>
                     </td>
                     <td>
                         <span class="status-pill status-${o.status}">${o.status}</span>
@@ -531,12 +537,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <button class="btn-action-small" onclick="updateStatus(${o.id}, 'Active')">Approve</button>
                         ` : o.status === 'Active' ? `
                             <button class="btn-action-small" onclick="updateStatus(${o.id}, 'Returned')">Mark Returned</button>
-                        ` : `<span style="color: #94a3b8; font-size: 12px;">Completed</span>`}
+                        ` : `<span style="color: #64748b; font-size: 12px; font-weight: 600;">Completed</span>`}
                     </td>
                 </tr>
             `).join('');
         } else {
-            ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 24px;">No rental orders found.</td></tr>`;
+            ordersTableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #94a3b8; padding: 24px;">No rental orders found.</td></tr>`;
         }
     }
 
@@ -573,20 +579,220 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (orderStatusFilter) orderStatusFilter.addEventListener('change', loadOrders);
 
     // =======================================================
-    // PREDEFINED COLOR PRESETS
+    // INTELLIGENT REAL-TIME COLOR MATCHER
     // =======================================================
-    const PREDEFINED_COLOURS = [
-        { name: 'Black', code: '#111827' },
-        { name: 'Silver', code: '#94a3b8' },
-        { name: 'White', code: '#ffffff' },
-        { name: 'Space Grey', code: '#4b5563' },
-        { name: 'Midnight Blue', code: '#1e3a8a' },
-        { name: 'Forest Green', code: '#14532d' },
-        { name: 'Gold', code: '#d97706' },
-        { name: 'Crimson Red', code: '#b91c1c' },
-        { name: 'Rose Gold', code: '#fb7185' },
-        { name: 'Titanium', code: '#64748b' }
-    ];
+    const EXTENDED_COLOR_MAP = {
+        'sunset orange': '#ea580c',
+        'burnt orange': '#c2410c',
+        'tangerine': '#f97316',
+        'apricot': '#fb923c',
+        'peach': '#fdba74',
+        'coral': '#fb7185',
+        'amber': '#d97706',
+        'rust': '#c2410c',
+        'copper': '#b45309',
+        
+        'space grey': '#4b5563',
+        'space gray': '#4b5563',
+        'matte titanium': '#64748b',
+        'natural titanium': '#78716c',
+        'titanium': '#64748b',
+        'graphite': '#374151',
+        'gunmetal': '#334155',
+        'charcoal': '#1f2937',
+        'slate': '#64748b',
+        'ash': '#9ca3af',
+        'silver': '#94a3b8',
+        'platinum': '#cbd5e1',
+        'chrome': '#cbd5e1',
+        'steel': '#64748b',
+        'metallic': '#94a3b8',
+        
+        'alpine white': '#ffffff',
+        'pure white': '#ffffff',
+        'pearl white': '#f8fafc',
+        'snow white': '#ffffff',
+        'off white': '#f8fafc',
+        'off-white': '#f8fafc',
+        'starlight': '#f1f5f9',
+        'ivory': '#fffff0',
+        'cream': '#fffbeb',
+        'milk': '#ffffff',
+        'chalk': '#f1f5f9',
+        
+        'matte black': '#18181b',
+        'jet black': '#09090b',
+        'midnight black': '#0f172a',
+        'pitch black': '#000000',
+        'onyx': '#0f172a',
+        'obsidian': '#09090b',
+        'carbon': '#18181b',
+        'midnight': '#0f172a',
+        
+        'midnight blue': '#1e3a8a',
+        'navy blue': '#1e293b',
+        'navy': '#1e293b',
+        'pacific blue': '#0284c7',
+        'sierra blue': '#38bdf8',
+        'sky blue': '#0ea5e9',
+        'royal blue': '#1d4ed8',
+        'electric blue': '#2563eb',
+        'cobalt': '#1d4ed8',
+        'ocean blue': '#0369a1',
+        'ice blue': '#7dd3fc',
+        'baby blue': '#93c5fd',
+        'denim': '#1e40af',
+        'indigo': '#4f46e5',
+        'azure': '#0284c7',
+        
+        'forest green': '#14532d',
+        'deep green': '#14532d',
+        'emerald green': '#059669',
+        'emerald': '#059669',
+        'mint green': '#10b981',
+        'mint': '#10b981',
+        'olive green': '#4d7c0f',
+        'olive': '#4d7c0f',
+        'army green': '#3f6212',
+        'sage green': '#84a98c',
+        'sage': '#84a98c',
+        'lime green': '#84cc16',
+        'lime': '#84cc16',
+        'pine': '#166534',
+        'moss': '#365314',
+        'jade': '#047857',
+        'pistachio': '#a3e635',
+        'sea green': '#0d9488',
+        
+        'crimson red': '#b91c1c',
+        'crimson': '#b91c1c',
+        'ruby red': '#e11d48',
+        'ruby': '#e11d48',
+        'scarlet': '#dc2626',
+        'cherry': '#be123c',
+        'maroon': '#881337',
+        'burgundy': '#881337',
+        'wine': '#722f37',
+        'brick': '#991b1b',
+        'ferrari red': '#dc2626',
+        
+        'rose gold': '#fb7185',
+        'gold': '#d97706',
+        'golden': '#d97706',
+        'champagne': '#fef08a',
+        'bronze': '#78350f',
+        'mustard': '#ca8a04',
+        'lemon': '#facc15',
+        'honey': '#f59e0b',
+        'sunflower': '#eab308',
+        'canary': '#fde047',
+        
+        'lavender': '#c084fc',
+        'violet': '#7c3aed',
+        'plum': '#581c87',
+        'lilac': '#c4b5fd',
+        'mauve': '#a855f7',
+        'amethyst': '#9333ea',
+        
+        'hot pink': '#ec4899',
+        'baby pink': '#fbcfe8',
+        'blush': '#f472b6',
+        'fuchsia': '#d946ef',
+        'magenta': '#d946ef',
+        'salmon': '#fb7185',
+        
+        'chocolate': '#451a03',
+        'coffee': '#451a03',
+        'caramel': '#92400e',
+        'walnut': '#3f2e1e',
+        'chestnut': '#5c2c16',
+        'tan': '#92400e',
+        'beige': '#d6d3d1',
+        'sand': '#e7e5e4',
+        'khaki': '#a3a380',
+        'taupe': '#78716c',
+        
+        'cyan': '#06b6d4',
+        'teal': '#0d9488',
+        'turquoise': '#14b8a6',
+        'aqua': '#06b6d4',
+        
+        'black': '#111827',
+        'white': '#ffffff',
+        'red': '#ef4444',
+        'blue': '#2563eb',
+        'green': '#16a34a',
+        'yellow': '#eab308',
+        'orange': '#f97316',
+        'purple': '#9333ea',
+        'pink': '#f43f5e',
+        'grey': '#6b7280',
+        'gray': '#6b7280',
+        'brown': '#78350f'
+    };
+
+    function detectColorFromName(rawName) {
+        if (!rawName || typeof rawName !== 'string') return '#111827';
+        const clean = rawName.trim().toLowerCase();
+        if (!clean) return '#111827';
+
+        // 1. Direct hex match
+        if (/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(clean)) {
+            return clean.startsWith('#') ? clean : '#' + clean;
+        }
+
+        // 2. Exact match in dictionary
+        if (EXTENDED_COLOR_MAP[clean]) {
+            return EXTENDED_COLOR_MAP[clean];
+        }
+
+        // 3. Key phrase match (longer keys checked first)
+        const sortedKeys = Object.keys(EXTENDED_COLOR_MAP).sort((a, b) => b.length - a.length);
+        for (const key of sortedKeys) {
+            const regex = new RegExp(`\\b${key}\\b`, 'i');
+            if (regex.test(clean)) {
+                return EXTENDED_COLOR_MAP[key];
+            }
+        }
+
+        // 4. Substring match
+        for (const key of sortedKeys) {
+            if (clean.includes(key)) {
+                return EXTENDED_COLOR_MAP[key];
+            }
+        }
+
+        // 5. Browser CSS color parser
+        try {
+            const testEl = document.createElement('div');
+            testEl.style.color = clean;
+            if (testEl.style.color) {
+                document.body.appendChild(testEl);
+                const rgb = window.getComputedStyle(testEl).color;
+                document.body.removeChild(testEl);
+                const m = rgb.match(/\\d+/g);
+                if (m && m.length >= 3) {
+                    return '#' + m.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+                }
+            }
+        } catch (e) {}
+
+        // 6. Deterministic harmonious HSL fallback
+        let hash = 0;
+        for (let i = 0; i < clean.length; i++) {
+            hash = clean.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        const s = 0.70;
+        const l = 0.48;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => {
+            const k = (n + hue / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`;
+    }
 
     // =======================================================
     // 7. ADD PRODUCT MODAL: STATE & VARIANT CONTROLLER
@@ -598,7 +804,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addVariantTabsBar = document.getElementById('addVariantTabsBar');
     const addColourPanel = document.getElementById('addColourPanel');
     const closeAddColourPanel = document.getElementById('closeAddColourPanel');
-    const addPredefinedColorsGrid = document.getElementById('addPredefinedColorsGrid');
     const addCustomColorPicker = document.getElementById('addCustomColorPicker');
     const addCustomColorNameInput = document.getElementById('addCustomColorNameInput');
     const confirmAddCustomColorBtn = document.getElementById('confirmAddCustomColorBtn');
@@ -789,16 +994,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         addVariantTabsBar.innerHTML = html;
     }
 
-    function renderAddPredefinedColors() {
-        if (!addPredefinedColorsGrid) return;
-        addPredefinedColorsGrid.innerHTML = PREDEFINED_COLOURS.map(c => `
-            <button type="button" class="predefined-color-pill" onclick="window.addPredefinedVariant('${c.name}', '${c.code}')">
-                <span class="predefined-color-dot" style="background: ${c.code};"></span>
-                <span>${c.name}</span>
-            </button>
-        `).join('');
-    }
-
     window.selectAddVariant = (index) => {
         saveAddModalActiveVariantFromForm();
         loadAddModalVariantIntoForm(index);
@@ -813,35 +1008,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isOpen && addCustomColorNameInput) {
             addCustomColorNameInput.focus();
         }
-    };
-
-    window.addPredefinedVariant = (name, code) => {
-        const exists = addModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
-        if (exists) {
-            showToast(`The "${name}" colour variant is already added!`, 'error');
-            return;
-        }
-
-        saveAddModalActiveVariantFromForm();
-
-        const newVar = {
-            id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            color_name: name,
-            color_code: code,
-            rent_price_per_day: '',
-            deposit_amount: '',
-            total_stock: 1,
-            available_stock: 1,
-            media: [],
-            specifications: ''
-        };
-
-        addModalVariants.push(newVar);
-        window.toggleAddColourPanel(false);
-        loadAddModalVariantIntoForm(addModalVariants.length - 1);
-        showToast(`Colour "${name}" added! Please enter its daily rent & stock.`, 'success');
-        const pInput = document.getElementById('newProdPriceDay');
-        if (pInput) pInput.focus();
     };
 
     window.removeAddVariant = (index, event) => {
@@ -868,10 +1034,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeAddColourPanel.addEventListener('click', () => window.toggleAddColourPanel(false));
     }
 
+    // Live Auto-Detection of Variant Colour as User Types in Add Modal
+    function syncAddCustomColorFromInput() {
+        if (!addCustomColorNameInput) return;
+        const text = addCustomColorNameInput.value.trim();
+        const hintEl = document.getElementById('addDetectedColorHint');
+        const dotEl = document.getElementById('addDetectedDot');
+        const textEl = document.getElementById('addDetectedText');
+
+        if (!text) {
+            if (hintEl) hintEl.style.display = 'none';
+            if (addCustomColorPicker) addCustomColorPicker.value = '#111827';
+            return;
+        }
+
+        const matchedColor = detectColorFromName(text);
+        if (addCustomColorPicker) {
+            addCustomColorPicker.value = matchedColor;
+        }
+
+        if (hintEl && dotEl && textEl) {
+            dotEl.style.background = matchedColor;
+            textEl.innerHTML = `Auto-matched colour for <b>"${text}"</b>: <span style="font-family: monospace; font-size: 11px;">${matchedColor.toUpperCase()}</span>`;
+            hintEl.style.display = 'inline-flex';
+        }
+    }
+
+    if (addCustomColorNameInput) {
+        addCustomColorNameInput.addEventListener('input', syncAddCustomColorFromInput);
+        addCustomColorNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (confirmAddCustomColorBtn) confirmAddCustomColorBtn.click();
+            }
+        });
+    }
+
+    if (addCustomColorPicker) {
+        addCustomColorPicker.addEventListener('input', () => {
+            const hintEl = document.getElementById('addDetectedColorHint');
+            const dotEl = document.getElementById('addDetectedDot');
+            const textEl = document.getElementById('addDetectedText');
+            if (hintEl && dotEl && textEl && addCustomColorNameInput && addCustomColorNameInput.value.trim()) {
+                dotEl.style.background = addCustomColorPicker.value;
+                textEl.innerHTML = `Custom swatch: <span style="font-family: monospace; font-size: 11px;">${addCustomColorPicker.value.toUpperCase()}</span>`;
+            }
+        });
+    }
+
     if (confirmAddCustomColorBtn && addCustomColorNameInput && addCustomColorPicker) {
         confirmAddCustomColorBtn.addEventListener('click', () => {
             const name = addCustomColorNameInput.value.trim();
-            const code = addCustomColorPicker.value;
+            const code = addCustomColorPicker.value || detectColorFromName(name);
 
             if (!name) {
                 showToast('Please enter a colour name (e.g. Matte Titanium)', 'error');
@@ -901,9 +1115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             addModalVariants.push(newVar);
             addCustomColorNameInput.value = '';
+            syncAddCustomColorFromInput();
             window.toggleAddColourPanel(false);
             loadAddModalVariantIntoForm(addModalVariants.length - 1);
-            showToast(`Custom colour "${name}" added! Please set its daily rent & stock.`, 'success');
+            showToast(`Colour variant "${name}" added! Please set its daily rent & stock.`, 'success');
             const pInput = document.getElementById('newProdPriceDay');
             if (pInput) pInput.focus();
         });
@@ -937,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ];
         addModalActiveVariantIdx = 0;
         currentAttachedMedia = [];
-        renderAddPredefinedColors();
         loadAddModalVariantIntoForm(0);
         window.toggleAddColourPanel(false);
     }
@@ -1217,7 +1431,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editVariantTabsBar = document.getElementById('editVariantTabsBar');
     const editAddColourPanel = document.getElementById('editAddColourPanel');
     const closeEditAddColourPanel = document.getElementById('closeEditAddColourPanel');
-    const editPredefinedColorsGrid = document.getElementById('editPredefinedColorsGrid');
     const editCustomColorPicker = document.getElementById('editCustomColorPicker');
     const editCustomColorNameInput = document.getElementById('editCustomColorNameInput');
     const editConfirmAddCustomColorBtn = document.getElementById('editConfirmAddCustomColorBtn');
@@ -1419,16 +1632,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         editVariantTabsBar.innerHTML = html;
     }
 
-    function renderEditPredefinedColors() {
-        if (!editPredefinedColorsGrid) return;
-        editPredefinedColorsGrid.innerHTML = PREDEFINED_COLOURS.map(c => `
-            <button type="button" class="predefined-color-pill" onclick="window.addEditPredefinedVariant('${c.name}', '${c.code}')">
-                <span class="predefined-color-dot" style="background: ${c.code};"></span>
-                <span>${c.name}</span>
-            </button>
-        `).join('');
-    }
-
     window.selectEditVariant = (index) => {
         saveEditModalActiveVariantFromForm();
         loadEditModalVariantIntoForm(index);
@@ -1443,35 +1646,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isOpen && editCustomColorNameInput) {
             editCustomColorNameInput.focus();
         }
-    };
-
-    window.addEditPredefinedVariant = (name, code) => {
-        const exists = editModalVariants.some(v => v.color_name.toLowerCase() === name.toLowerCase());
-        if (exists) {
-            showToast(`The "${name}" colour variant is already added!`, 'error');
-            return;
-        }
-
-        saveEditModalActiveVariantFromForm();
-
-        const newVar = {
-            id: 'var_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            color_name: name,
-            color_code: code,
-            rent_price_per_day: '',
-            deposit_amount: '',
-            total_stock: 1,
-            available_stock: 1,
-            media: [],
-            specifications: ''
-        };
-
-        editModalVariants.push(newVar);
-        window.toggleEditAddColourPanel(false);
-        loadEditModalVariantIntoForm(editModalVariants.length - 1);
-        showToast(`Colour variant "${name}" added! Please configure its rent & stock.`, 'success');
-        const pInput = document.getElementById('editProdPriceDay');
-        if (pInput) pInput.focus();
     };
 
     window.removeEditVariant = (index, event) => {
@@ -1498,10 +1672,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeEditAddColourPanel.addEventListener('click', () => window.toggleEditAddColourPanel(false));
     }
 
+    // Live Auto-Detection of Variant Colour as User Types in Edit Modal
+    function syncEditCustomColorFromInput() {
+        if (!editCustomColorNameInput) return;
+        const text = editCustomColorNameInput.value.trim();
+        const hintEl = document.getElementById('editDetectedColorHint');
+        const dotEl = document.getElementById('editDetectedDot');
+        const textEl = document.getElementById('editDetectedText');
+
+        if (!text) {
+            if (hintEl) hintEl.style.display = 'none';
+            if (editCustomColorPicker) editCustomColorPicker.value = '#111827';
+            return;
+        }
+
+        const matchedColor = detectColorFromName(text);
+        if (editCustomColorPicker) {
+            editCustomColorPicker.value = matchedColor;
+        }
+
+        if (hintEl && dotEl && textEl) {
+            dotEl.style.background = matchedColor;
+            textEl.innerHTML = `Auto-matched colour for <b>"${text}"</b>: <span style="font-family: monospace; font-size: 11px;">${matchedColor.toUpperCase()}</span>`;
+            hintEl.style.display = 'inline-flex';
+        }
+    }
+
+    if (editCustomColorNameInput) {
+        editCustomColorNameInput.addEventListener('input', syncEditCustomColorFromInput);
+        editCustomColorNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (editConfirmAddCustomColorBtn) editConfirmAddCustomColorBtn.click();
+            }
+        });
+    }
+
+    if (editCustomColorPicker) {
+        editCustomColorPicker.addEventListener('input', () => {
+            const hintEl = document.getElementById('editDetectedColorHint');
+            const dotEl = document.getElementById('editDetectedDot');
+            const textEl = document.getElementById('editDetectedText');
+            if (hintEl && dotEl && textEl && editCustomColorNameInput && editCustomColorNameInput.value.trim()) {
+                dotEl.style.background = editCustomColorPicker.value;
+                textEl.innerHTML = `Custom swatch: <span style="font-family: monospace; font-size: 11px;">${editCustomColorPicker.value.toUpperCase()}</span>`;
+            }
+        });
+    }
+
     if (editConfirmAddCustomColorBtn && editCustomColorNameInput && editCustomColorPicker) {
         editConfirmAddCustomColorBtn.addEventListener('click', () => {
             const name = editCustomColorNameInput.value.trim();
-            const code = editCustomColorPicker.value;
+            const code = editCustomColorPicker.value || detectColorFromName(name);
 
             if (!name) {
                 showToast('Please enter a colour name (e.g. Space Grey)', 'error');
@@ -1531,9 +1753,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             editModalVariants.push(newVar);
             editCustomColorNameInput.value = '';
+            syncEditCustomColorFromInput();
             window.toggleEditAddColourPanel(false);
             loadEditModalVariantIntoForm(editModalVariants.length - 1);
-            showToast(`Custom colour "${name}" added! Please configure its rent & stock.`, 'success');
+            showToast(`Colour variant "${name}" added! Please configure its rent & stock.`, 'success');
             const pInput = document.getElementById('editProdPriceDay');
             if (pInput) pInput.focus();
         });
@@ -1651,7 +1874,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         editModalActiveVariantIdx = 0;
-        renderEditPredefinedColors();
         loadEditModalVariantIntoForm(0);
         window.toggleEditAddColourPanel(false);
 

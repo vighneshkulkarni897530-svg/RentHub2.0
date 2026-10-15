@@ -53,10 +53,10 @@
 
         <!-- Section Title -->
         <h2 class="hub-select-title">SELECT YOUR MODULE</h2>
-        <p class="hub-select-desc">Choose an option to manage your store inventory, rental bookings, or admin profile</p>
+        <p class="hub-select-desc">Choose an option to manage your store inventory, booking history, or admin profile</p>
       </div>
 
-      <!-- 3 GRAND CARDS (INVENTORY & PRODUCTS, RENTAL BOOKINGS, ADMIN PROFILE) -->
+      <!-- 3 GRAND CARDS (INVENTORY & PRODUCTS, BOOKING HISTORY, ADMIN PROFILE) -->
       <div class="hub-cards-grid">
         
         <!-- CARD 1: INVENTORY & PRODUCTS -->
@@ -70,15 +70,15 @@
           <button class="card-action-btn">Enter Inventory &rarr;</button>
         </div>
 
-        <!-- CARD 2: RENTAL BOOKINGS -->
+        <!-- CARD 2: BOOKING HISTORY -->
         <div class="hub-module-card" id="cardBookings" onclick="openModule('bookingsSection')">
           <div class="card-img-container">
-            <img src="assets/rental_bookings.jpg" alt="Rental Bookings">
+            <img src="assets/rental_bookings.jpg" alt="Booking History">
             <span class="card-tag-floating" id="hubActiveOrdersTag">0 Active</span>
           </div>
-          <h3 class="card-title-text">RENTAL BOOKINGS</h3>
+          <h3 class="card-title-text">BOOKING HISTORY</h3>
           <p class="card-sub-info">Orders, Approvals &amp; Returns</p>
-          <button class="card-action-btn">View Bookings &rarr;</button>
+          <button class="card-action-btn">View History &rarr;</button>
         </div>
 
         <!-- CARD 3: ADMIN PROFILE -->
@@ -221,7 +221,7 @@
   </div>
 
 
-  <!-- MODULE 2: RENTAL BOOKINGS -->
+  <!-- MODULE 2: BOOKING HISTORY -->
   <div class="module-expanded-view" id="bookingsSection">
     <div class="expanded-header-bar">
       <div>
@@ -230,7 +230,7 @@
         </button>
       </div>
       <div class="expanded-title">
-        <h2>📋 Customer Rental Bookings</h2>
+        <h2>📋 Customer Booking History</h2>
         <p>Track active bookings, approve pending requests, and manage returns</p>
       </div>
       <div class="expanded-actions">
@@ -252,7 +252,9 @@
               <th>Order #</th>
               <th>Product</th>
               <th>Customer</th>
-              <th>Rental Period</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Number of Days</th>
               <th>Total Amount</th>
               <th>Status</th>
               <th>Actions</th>
@@ -495,7 +497,7 @@
           <span>📦 Manage Inventory</span>
         </button>
         <button class="btn-sec-shortcut" onclick="openModule('bookingsSection')">
-          <span>📋 View Bookings</span>
+          <span>📋 Booking History</span>
         </button>
       </div>
     </div>
@@ -560,22 +562,21 @@
           <!-- Add Colour Dropdown / Palette Panel -->
           <div class="add-colour-panel" id="addColourPanel" style="display: none;">
             <div class="add-colour-panel-header">
-              <span class="panel-title">Choose Predefined Colour or Add Custom:</span>
-              <button type="button" class="btn-close-colour-panel" id="closeAddColourPanel" title="Close palette">&times;</button>
-            </div>
-            
-            <!-- Quick Predefined Color Swatches -->
-            <div class="predefined-colors-grid" id="addPredefinedColorsGrid">
-              <!-- Dynamically populated preset color chips -->
+              <span class="panel-title">Add Colour Variant:</span>
+              <button type="button" class="btn-close-colour-panel" id="closeAddColourPanel" title="Close panel">&times;</button>
             </div>
 
-            <!-- Custom Colour Input Row -->
+            <!-- Custom Colour Input Row with Real-Time Auto Color Matching -->
             <div class="custom-color-row">
-              <input type="color" id="addCustomColorPicker" value="#0265fe" class="custom-color-picker" title="Pick custom color swatch">
+              <input type="color" id="addCustomColorPicker" value="#111827" class="custom-color-picker" title="Pick or view color swatch">
               <input type="text" id="addCustomColorNameInput" class="form-control form-control-luxury" placeholder="e.g. Matte Titanium, Sunset Orange, Alpine White">
               <button type="button" class="btn-add-custom-variant" id="confirmAddCustomColorBtn">
                 <span>+ Add Variant</span>
               </button>
+            </div>
+            <div id="addDetectedColorHint" class="detected-color-hint" style="display: none;">
+              <span class="detected-color-dot" id="addDetectedDot"></span>
+              <span id="addDetectedText">Auto-matched Colour</span>
             </div>
           </div>
 
@@ -596,17 +597,11 @@
           <div class="form-grid-3col">
             <div class="form-group">
               <label class="form-label">Daily Rent (₹) *</label>
-              <div class="input-with-prefix">
-                <span class="input-prefix">₹</span>
-                <input type="number" id="newProdPriceDay" class="form-control form-control-luxury has-prefix" placeholder="500" min="1" required>
-              </div>
+              <input type="number" id="newProdPriceDay" class="form-control form-control-luxury" placeholder="500" min="1" required>
             </div>
             <div class="form-group">
               <label class="form-label">Security Deposit (₹)</label>
-              <div class="input-with-prefix">
-                <span class="input-prefix">₹</span>
-                <input type="number" id="newProdDeposit" class="form-control form-control-luxury has-prefix" placeholder="2000" min="0">
-              </div>
+              <input type="number" id="newProdDeposit" class="form-control form-control-luxury" placeholder="2000" min="0">
             </div>
             <div class="form-group">
               <label class="form-label">Total Stock Units *</label>
@@ -718,22 +713,21 @@
           <!-- Add Colour Dropdown / Palette Panel -->
           <div class="add-colour-panel" id="editAddColourPanel" style="display: none;">
             <div class="add-colour-panel-header">
-              <span class="panel-title">Choose Predefined Colour or Add Custom:</span>
-              <button type="button" class="btn-close-colour-panel" id="closeEditAddColourPanel" title="Close palette">&times;</button>
-            </div>
-            
-            <!-- Quick Predefined Color Swatches -->
-            <div class="predefined-colors-grid" id="editPredefinedColorsGrid">
-              <!-- Dynamically populated preset color chips -->
+              <span class="panel-title">Add Colour Variant:</span>
+              <button type="button" class="btn-close-colour-panel" id="closeEditAddColourPanel" title="Close panel">&times;</button>
             </div>
 
-            <!-- Custom Colour Input Row -->
+            <!-- Custom Colour Input Row with Real-Time Auto Color Matching -->
             <div class="custom-color-row">
-              <input type="color" id="editCustomColorPicker" value="#0265fe" class="custom-color-picker" title="Pick custom color shade">
+              <input type="color" id="editCustomColorPicker" value="#111827" class="custom-color-picker" title="Pick or view color shade">
               <input type="text" id="editCustomColorNameInput" class="form-control form-control-luxury" placeholder="e.g. Space Grey, Midnight Blue, Silver">
               <button type="button" class="btn-add-custom-variant" id="editConfirmAddCustomColorBtn">
                 <span>+ Add Variant</span>
               </button>
+            </div>
+            <div id="editDetectedColorHint" class="detected-color-hint" style="display: none;">
+              <span class="detected-color-dot" id="editDetectedDot"></span>
+              <span id="editDetectedText">Auto-matched Colour</span>
             </div>
           </div>
 
@@ -754,17 +748,11 @@
           <div class="form-grid-4col">
             <div class="form-group">
               <label class="form-label">Daily Rent (₹) *</label>
-              <div class="input-with-prefix">
-                <span class="input-prefix">₹</span>
-                <input type="number" id="editProdPriceDay" class="form-control form-control-luxury has-prefix" placeholder="500" min="1" required>
-              </div>
+              <input type="number" id="editProdPriceDay" class="form-control form-control-luxury" placeholder="500" min="1" required>
             </div>
             <div class="form-group">
               <label class="form-label">Security Deposit (₹)</label>
-              <div class="input-with-prefix">
-                <span class="input-prefix">₹</span>
-                <input type="number" id="editProdDeposit" class="form-control form-control-luxury has-prefix" placeholder="2000" min="0">
-              </div>
+              <input type="number" id="editProdDeposit" class="form-control form-control-luxury" placeholder="2000" min="0">
             </div>
             <div class="form-group">
               <label class="form-label">Total Stock *</label>

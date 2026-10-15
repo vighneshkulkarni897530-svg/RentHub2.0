@@ -74,7 +74,7 @@ try {
         if (apps.length === 0) {
             appInstance = adminApp.initializeApp({
                 credential,
-                projectId: process.env.FIREBASE_PROJECT_ID || 'renthub-28307'
+                projectId: process.env.FIREBASE_PROJECT_ID || 'rent-hub-d4944'
             });
         } else {
             appInstance = apps[0];
@@ -83,7 +83,7 @@ try {
         firestoreDb = adminFirestore.getFirestore(appInstance);
         firestoreDb.settings({ ignoreUndefinedProperties: true });
         isFirebaseEnabled = true;
-        console.log(`✅ [Firebase] Cloud Firestore authenticated and initialized for: ${process.env.FIREBASE_PROJECT_ID || 'renthub-28307'}`);
+        console.log(`✅ [Firebase] Cloud Firestore authenticated and initialized for: ${process.env.FIREBASE_PROJECT_ID || 'rent-hub-d4944'}`);
     } else if (process.env.FIREBASE_PROJECT_ID) {
         console.log(`🔥 [Firebase] Web App Configured for Project: ${process.env.FIREBASE_PROJECT_ID}`);
         console.log(`ℹ️ [Firebase] Note: To enable Backend Firestore Admin sync, place 'serviceAccountKey.json' in 'd:/Rent Hub/Backend/'`);

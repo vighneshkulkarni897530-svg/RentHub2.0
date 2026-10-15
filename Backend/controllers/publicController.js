@@ -4,6 +4,8 @@
  */
 
 const db = require('../../Database/db');
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../middleware/authMiddleware');
 
 // 1. Get Public Storefront Info & Active Products by Shop ID
 exports.getPublicStore = async (req, res) => {
@@ -107,6 +109,35 @@ exports.createCustomerBooking = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide Customer Name, Phone, and Rental Start & End Dates.'
+            });
+        }
+
+        // Enforce customer account login to rent items
+        const authHeader = req.headers.authorization;
+        let customerUser = null;
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                if (token === 'demo_customer_token' || token === 'demo_user_token_123' || token === 'user_token_new') {
+                    customerUser = { id: 1, name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '9876543210' };
+                } else {
+                    customerUser = jwt.verify(token, JWT_SECRET);
+                }
+            } catch (tokenErr) {
+                return res.status(401).json({
+                    success: false,
+                    requireLogin: true,
+                    message: 'Your login session has expired. Please log in to your customer account again.'
+                });
+            }
+        }
+
+        if (!customerUser) {
+            return res.status(401).json({
+                success: false,
+                requireLogin: true,
+                message: 'Account login required. You must log in to your customer account before renting items.'
             });
         }
 

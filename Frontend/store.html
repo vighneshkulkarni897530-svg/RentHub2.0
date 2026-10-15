@@ -18,8 +18,8 @@
       </a>
 
       <div class="store-header-actions">
-        <!-- Account Access Button (Links directly to Full Customer Login Page) -->
-        <a href="user-login.html" class="btn-account-nav" id="openAccountBtn" style="text-decoration: none;">
+        <!-- Account Access Button (Opens in-page Customer Login/Account Modal) -->
+        <a href="user-login.html" class="btn-account-nav" id="openAccountBtn" onclick="openAccountModal(event); return false;" style="text-decoration: none;">
           <div class="account-nav-avatar-icon" id="accountNavIcon">👤</div>
           <div class="account-nav-text-col">
             <span class="account-nav-label" id="accountNavLabel">Account</span>
@@ -348,7 +348,7 @@
   </div>
 
   <!-- Customer / User Account Access & Login Modal -->
-  <div class="store-modal-backdrop" id="accountModal" style="z-index: 1040;">
+  <div class="store-modal-backdrop" id="accountModal" style="z-index: 2000;">
     <div class="store-modal-box account-modal-box">
       
       <div class="store-modal-header" style="margin-bottom: 16px;">
@@ -356,7 +356,7 @@
           <div class="account-header-icon-badge">👤</div>
           <div>
             <h3 style="font-size: 19px; font-weight: 800; color: #0a192f; margin: 0;">Customer Account</h3>
-            <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">Rental Bookings, Security Deposits &amp; Profile</span>
+            <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">Booking History, Security Deposits &amp; Profile</span>
           </div>
         </div>
         <button class="store-modal-close" id="closeAccountModal" onclick="closeAccountModal()">&times;</button>
@@ -409,7 +409,7 @@
         <div id="tabUserLoginContent" class="account-tab-pane active">
           <div class="account-welcome-banner">
             <h4 style="font-size: 14.5px; font-weight: 800; color: #0a192f; margin: 0 0 4px 0;">Welcome Customer!</h4>
-            <p style="font-size: 12.5px; color: #64748b; margin: 0;">Sign in to view your rental bookings, deposit refunds, and enjoy 1-click checkout.</p>
+            <p style="font-size: 12.5px; color: #64748b; margin: 0;">Sign in to view your booking history, deposit refunds, and enjoy 1-click checkout.</p>
           </div>
 
           <form id="customerAccountLoginForm" onsubmit="handleCustomerLoginSubmit(event)" style="display: flex; flex-direction: column; gap: 12px;">

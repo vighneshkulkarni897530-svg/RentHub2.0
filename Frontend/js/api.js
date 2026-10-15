@@ -5,7 +5,7 @@
 
 const API_BASE_URL = (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http'))
     ? `${window.location.origin}/api`
-    : 'http://localhost:7000/api';
+    : 'http://localhost:5000/api';
 
 const API = {
     // 1. Shop Authentication
